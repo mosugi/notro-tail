@@ -14,11 +14,11 @@
     "clean:cache": "rm -rf cache"
   },
   "dependencies": {
-    "@astrojs/check": "^0.8.1",
-    "@astrojs/sitemap": "^3.1.6",
-    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/tailwind": "^5.1.4",
     "@notionhq/client": "^2.2.15",
-    "astro": "^4.11.5",
+    "astro": "^5.1.1",
     "cache-manager": "^5.5.2",
     "cache-manager-fs-hash": "^2.0.0",
     "notro": "^0.0.1",
