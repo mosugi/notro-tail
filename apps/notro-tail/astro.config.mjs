@@ -5,7 +5,7 @@ import sitemap from "@astrojs/sitemap";
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://notrotail.mosugi.com',
+  site: "https://notrotail.mosugi.com",
   image: {
     remotePatterns: [
       {
@@ -22,7 +22,7 @@ export default defineConfig({
       optimizeRemoteImage: true,
       useRawHtml: true,
       enableCalloutAsWrapper: true,
-      fetchAllPagesOnServerStart: true,
+      fetchAllPagesOnServerStart: false,
       queryChildDatabaseParameters: {
         filter: {
           property: "Public",
@@ -32,8 +32,8 @@ export default defineConfig({
         },
         sorts: [
           {
-            "property": "Date",
-            "direction": "descending"
+            property: "Date",
+            direction: "descending",
           },
           {
             timestamp: "last_edited_time",
@@ -41,7 +41,14 @@ export default defineConfig({
           },
         ],
       },
-      visibleChildDatabaseProperties: ["Name","Description","Tags","Category","Date","Author"],
+      visibleChildDatabaseProperties: [
+        "Name",
+        "Description",
+        "Tags",
+        "Category",
+        "Date",
+        "Author",
+      ],
     }),
   ],
   vite: {

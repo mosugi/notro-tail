@@ -1,0 +1,128 @@
+---
+import type { BlockWithChildren } from "../loader/loader";
+
+export interface Props {
+  blocks: BlockWithChildren[];
+}
+
+const { blocks } = Astro.props;
+
+import { Debug } from "astro:components";
+import Bookmark from "./Bookmark.astro";
+import NumberedListItemContainer from "./NumberedListItemContainer.astro";
+import BulletedListItemContainer from "./BulletedListItemContainer.astro";
+import Divider from "./Divider.astro";
+import TodoListItem from "./TodoListItem.astro";
+import NumberedListItem from "./NumberedListItem.astro";
+import TodoListItemContainer from "./TodoListItemContainer.astro";
+import Column from "./Column.astro";
+import Database from "./Database.astro";
+import Quote from "./Quote.astro";
+import Heading1 from "./Heading1.astro";
+import LinkToPage from "./LinkToPage.astro";
+import ColumnList from "./ColumnList.astro";
+import SyncedBlock from "./SyncedBlock.astro";
+import Paragraph from "./Paragraph.astro";
+import BulletedListItem from "./BulletedListItem.astro";
+import ToggleContainer from "./ToggleContainer.astro";
+import Heading3 from "./Heading3.astro";
+import Image from "./Image.astro";
+import ChildPage from "./ChildPage.astro";
+import Heading2 from "./Heading2.astro";
+import CodeOrRawHTML from "./CodeOrRawHTML.astro";
+import CalloutOrCustomContainer from "./CalloutOrCustomContainer.astro";
+---
+
+{
+  blocks.map((block, i, array) => {
+    let children = null;
+
+    if (block.has_children) {
+      children = <Astro.self blocks={block.children} />;
+    }
+
+    switch (block.type) {
+      case "paragraph":
+        return <Paragraph block={block}>{children}</Paragraph>;
+      case "heading_1":
+        return block.heading_1.is_toggleable ? (
+        <ToggleContainer>
+          <Heading1 block={block} slot="summary" />
+          {children}
+        </ToggleContainer>
+          ) : (
+        <Heading1 block={block}>{children}</Heading1>
+          );
+      case "heading_2":
+        return block.heading_2.is_toggleable ? (
+        <ToggleContainer>
+          <Heading2 block={block} slot="summary" />
+          {children}
+        </ToggleContainer>
+          ) : (
+        <Heading2 block={block}>{children}</Heading2>
+          );
+      case "heading_3":
+        return block.heading_3.is_toggleable ? (
+        <ToggleContainer>
+          <Heading3 block={block} slot="summary" />
+          {children}
+        </ToggleContainer>
+          ) : (
+        <Heading3 block={block}>{children}</Heading3>
+          );
+      case "bulleted_list_item":
+        // FIXME 冗長なulタグを生成しCSSが書きづらい
+        return <BulletedListItemContainer><BulletedListItem block={block}>{children}</BulletedListItem></BulletedListItemContainer>;
+      case "numbered_list_item":
+        // FIXME 冗長なolタグを生成し連番がおかしくなる
+        return <Debug block={block} />;
+      case "callout":
+        // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも
+        return (
+        <CalloutOrCustomContainer block={block}>
+          {children}
+        </CalloutOrCustomContainer>
+          );
+      case "column_list":
+        return <ColumnList block={block}>{children}</ColumnList>;
+      case "column":
+        return <Column block={block}>{children}</Column>;
+      case "image":
+        return <Image block={block} />;
+      case "code":
+        // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも
+        return <CodeOrRawHTML block={block} />;
+      case "bookmark":
+        return <Bookmark block={block} />;
+      case "divider":
+        return <Divider block={block} />;
+      case "quote":
+        return <Quote block={block}>{children}</Quote>;
+      case "to_do":
+        return <TodoListItemContainer><TodoListItem block={block} /></TodoListItemContainer>;
+      case "synced_block": // TODO 要実装
+      case "link_to_page": // TODO 要実装
+      case "child_database":
+      case "child_page":
+      case "template":
+      case "toggle":
+      case "breadcrumb":
+      case "table_of_contents":
+      case "table":
+      case "table_row":
+      case "embed":
+      case "video":
+      case "audio":
+      case "file":
+      case "pdf":
+      case "equation":
+      case "link_preview":
+      case "unsupported":
+      default:
+        console.log("Unknown block type:", block.type);
+        <!--return <Debug {block} />-->
+        return null;
+    }
+  })
+}

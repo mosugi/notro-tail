@@ -17,6 +17,13 @@ export {
   getNotionBlock,
 };
 
+// FIXME: import { BlockRenderer } from "./components/BlockRenderer.astro";
+// import BlockRenderer from "./components/BlockRenderer.astro";
+
+// export { default as NotionBlocks } from "./components/NotionBlocks.astro";
+
+export { loader } from "./loader/loader.ts";
+
 export type IntegrationOptions = {
   token: string;
   notionId: string;

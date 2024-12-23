@@ -1,0 +1,19 @@
+---
+import { getCollection } from "astro:content";
+import NotionBlocks from "notro/src/components/NotionBlocks.astro";
+import Layout from "../layouts/Layout.astro";
+import type { BlockWithChildren } from "notro/src/loader/loader";
+
+// FIXME https://docs.astro.build/en/guides/content-collections/
+const collection = await getCollection("database");
+const entry = collection[0];
+
+import { Debug } from "astro:components";
+---
+
+<Layout title={"title"}>
+  <h1>{entry.id}</h1>
+  <main class="notrotail-page" id={"page.id"}>
+    <NotionBlocks blocks={entry.data.blocks} />
+  </main>
+</Layout>
