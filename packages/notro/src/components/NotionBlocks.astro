@@ -75,8 +75,8 @@ import CalloutOrCustomContainer from "./CalloutOrCustomContainer.astro";
         // FIXME 冗長なulタグを生成しCSSが書きづらい
         return <BulletedListItemContainer><BulletedListItem block={block}>{children}</BulletedListItem></BulletedListItemContainer>;
       case "numbered_list_item":
-        // FIXME 冗長なolタグを生成し連番がおかしくなる
-        return <Debug block={block} />;
+        // FIXME Nestした構造に対応できていない
+        return <NumberedListItem block={block} isFirst={array[i - 1]?.type === "numbered_list_item"} isLast={array[i - 1]?.type === "numbered_list_item"}>{children}</NumberedListItem>;
       case "callout":
         // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも
         return (

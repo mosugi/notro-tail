@@ -1,17 +1,32 @@
 ---
 import type { NumberedListItemBlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import RichText from "./RichText.astro";
+
 interface Props {
   block: NumberedListItemBlockObjectResponse;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
-const { block } = Astro.props;
+const { block, isFirst, isLast } = Astro.props;
 ---
+
+{
+  isFirst && (
+    <Fragment
+      set:html={
+        '<ul class="notion-selectable notion-numbered_list-block-container">'
+      }
+    />
+  )
+}
 
 <li
   id={block.id}
-  class=`notion-selectable notion-numbered_list-block notion-color-${block.numbered_list_item.color}`
+  class={`notion-selectable notion-numbered_list-block notion-color-${block.numbered_list_item.color}`}
 >
   <RichText richText={block.numbered_list_item.rich_text} />
   <slot />
 </li>
+
+{isLast && <Fragment set:html={"</ul>"} />}

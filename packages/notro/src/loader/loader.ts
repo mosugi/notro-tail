@@ -45,32 +45,30 @@ export function loader(options: ClientOptions): Loader {
       const storedPage = store.get(pageId);
       if (isFullPage(page) && storedPage?.digest !== page.last_edited_time) {
         const blockIterator = retrieveBlockChildren(client, pageId);
+        const blocks = Array.fromAsync(blockIterator);
 
-        const blocks = await Array.fromAsync(blockIterator);
+        // TODO blocksはP-Queueで3個まで同時取得とする
+        Promise.all([blocks]).then(async (blocks) => {
+          const data = await parseData({
+            id: page.id,
+            data: {
+              icon: page.icon,
+              cover: page.cover,
+              archived: page.archived,
+              in_trash: page.in_trash,
+              url: page.url,
+              public_url: page.public_url,
+              properties: page.properties,
+              blocks: blocks,
+            },
+          });
 
-        const transformed = await Promise.all(
-          items.map((num) => Array.fromAsync(blockIterator)),
-        );
-
-        const data = await parseData({
-          id: page.id,
-          data: {
-            icon: page.icon,
-            cover: page.cover,
-            archived: page.archived,
-            in_trash: page.in_trash,
-            url: page.url,
-            public_url: page.public_url,
-            properties: page.properties,
-            blocks: blocks,
-          },
-        });
-
-        //TODO: ストアされたうち削除されたページの取り扱い
-        store.set({
-          id: page.id,
-          digest: page.last_edited_time,
-          data: data,
+          //TODO: ストアされたうち削除されたページの取り扱い
+          store.set({
+            id: page.id,
+            digest: page.last_edited_time,
+            data: data,
+          });
         });
       }
     },
