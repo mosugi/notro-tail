@@ -41,12 +41,14 @@ export function loader({
       generateDigest,
     }): Promise<void> => {
       // Load data and update the store
-      const pages = await client.databases.query(queryParameters);
+      const pageOrDatabases = await Array.fromAsync(
+        iteratePaginatedAPI(client.databases.query, queryParameters),
+      );
 
       //TODO Debug code
       store.clear();
 
-      const pagePromises = pages.results
+      const loadPageBlocksPromises = pageOrDatabases
         .filter((page) => isFullPage(page))
         .filter((page) => isStored(store, page))
         .map(
@@ -54,7 +56,7 @@ export function loader({
         );
 
       //FIXME use p-queue and Retry for 3rps limit
-      await Promise.all(pagePromises);
+      await Promise.all(loadPageBlocksPromises);
     },
     // Optionally, define the schema of an entry.
     // It will be overridden by user-defined schema.
