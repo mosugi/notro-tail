@@ -1,0 +1,35 @@
+---
+import type { BlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
+import BulletedListItemContainer from "./BulletedListItemContainer.astro";
+import NumberedListItemContainer from "./NumberedListItemContainer.astro";
+import TodoListItemContainer from "./TodoListItemContainer.astro";
+interface Props {
+  type: BlockObjectResponse["type"];
+}
+
+const { type } = Astro.props;
+
+console.log(type);
+---
+
+{
+  type === "bulleted_list_item" && (
+    <BulletedListItemContainer>
+      <slot />
+    </BulletedListItemContainer>
+  )
+}
+{
+  type === "numbered_list_item" && (
+    <NumberedListItemContainer>
+      <slot />
+    </NumberedListItemContainer>
+  )
+}
+{
+  type === "to_do" && (
+    <TodoListItemContainer>
+      <slot />
+    </TodoListItemContainer>
+  )
+}

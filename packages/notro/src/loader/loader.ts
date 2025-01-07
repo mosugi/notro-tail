@@ -46,7 +46,7 @@ export function loader({
       );
 
       //TODO Debug code
-      store.clear();
+      // store.clear();
 
       const loadPageBlocksPromises = pageOrDatabases
         .filter((page) => isFullPage(page))

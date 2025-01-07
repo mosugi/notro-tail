@@ -26,11 +26,16 @@ import Paragraph from "./Paragraph.astro";
 import BulletedListItem from "./BulletedListItem.astro";
 import ToggleContainer from "./ToggleContainer.astro";
 import Heading3 from "./Heading3.astro";
-import Image from "./Image.astro";
+import OptimizedImage from "./OptimizedImage.astro";
 import ChildPage from "./ChildPage.astro";
 import Heading2 from "./Heading2.astro";
 import CodeOrRawHTML from "./CodeOrRawHTML.astro";
 import CalloutOrCustomContainer from "./CalloutOrCustomContainer.astro";
+import Block from "./Block.astro";
+import { isSameType } from "../utils/notion/utils";
+import ListItemContainer from "./ListItemContainer.astro";
+
+let tempListItems: any = [];
 ---
 
 {
@@ -43,64 +48,38 @@ import CalloutOrCustomContainer from "./CalloutOrCustomContainer.astro";
 
     switch (block.type) {
       case "paragraph":
-        return <Paragraph block={block}>{children}</Paragraph>;
       case "heading_1":
-        return block.heading_1.is_toggleable ? (
-        <ToggleContainer>
-          <Heading1 block={block} slot="summary" />
-          {children}
-        </ToggleContainer>
-          ) : (
-        <Heading1 block={block}>{children}</Heading1>
-          );
       case "heading_2":
-        return block.heading_2.is_toggleable ? (
-        <ToggleContainer>
-          <Heading2 block={block} slot="summary" />
-          {children}
-        </ToggleContainer>
-          ) : (
-        <Heading2 block={block}>{children}</Heading2>
-          );
       case "heading_3":
-        return block.heading_3.is_toggleable ? (
-        <ToggleContainer>
-          <Heading3 block={block} slot="summary" />
-          {children}
-        </ToggleContainer>
-          ) : (
-        <Heading3 block={block}>{children}</Heading3>
-          );
-      case "bulleted_list_item":
-        // FIXME 冗長なulタグを生成しCSSが書きづらい
-        return <BulletedListItemContainer><BulletedListItem block={block}>{children}</BulletedListItem></BulletedListItemContainer>;
-      case "numbered_list_item":
-        // FIXME Nestした構造に対応できていない
-        return <NumberedListItem block={block} isFirst={array[i - 1]?.type === "numbered_list_item"} isLast={array[i - 1]?.type === "numbered_list_item"}>{children}</NumberedListItem>;
-      case "callout":
-        // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも
-        return (
-        <CalloutOrCustomContainer block={block}>
-          {children}
-        </CalloutOrCustomContainer>
-          );
       case "column_list":
-        return <ColumnList block={block}>{children}</ColumnList>;
       case "column":
-        return <Column block={block}>{children}</Column>;
-      case "image":
-        return <Image block={block} />;
-      case "code":
-        // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも
-        return <CodeOrRawHTML block={block} />;
       case "bookmark":
-        return <Bookmark block={block} />;
       case "divider":
-        return <Divider block={block} />;
       case "quote":
-        return <Quote block={block}>{children}</Quote>;
+      case "code":
+        return <Block block={block}>{children}</Block>;
+      case "bulleted_list_item":
+      case "numbered_list_item":
       case "to_do":
-        return <TodoListItemContainer><TodoListItem block={block} /></TodoListItemContainer>;
+        tempListItems.push(
+          <Block block={block}>{children}</Block>)
+        if(block.type !== array[i + 1]?.type){
+          const container = (
+            <ListItemContainer type={block.type}>
+              {tempListItems}
+            </ListItemContainer>
+          )
+          tempListItems = [];
+          return container;
+          }
+        return null;
+      <!--case "callout":-->
+      <!--  // FIXME シンプルに済ませるためCustom機能はNotionBlocks.astroではなく別で書いた方が良いかも-->
+      <!--  return (-->
+      <!--  <CalloutOrCustomContainer block={block}>-->
+      <!--    {children}-->
+      <!--  </CalloutOrCustomContainer>-->
+      <!--    );-->
       case "synced_block": // TODO 要実装
       case "link_to_page": // TODO 要実装
       case "child_database":

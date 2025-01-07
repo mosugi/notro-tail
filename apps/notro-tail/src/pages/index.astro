@@ -1,34 +1,22 @@
 ---
-import { isChildPage, isChildDatabase } from "notro/src/utils/notion/utils";
-import { getNotionPage } from "notro/src/utils/notion/api/pages";
-import { toPage } from "notro/src/utils/notion/utils";
-import BlockRenderer from "notro/src/components/BlockRenderer.astro";
-import { getPagesByType, PageType } from "../utils/template";
+import { getCollection } from "astro:content";
+import NotionBlocks from "notro/src/components/NotionBlocks.astro";
 import Layout from "../layouts/Layout.astro";
-import { getNotionBlock } from "notro";
-import type { Page } from "notro/src/utils/notion/utils.ts";
+import type { BlockWithChildren } from "notro/src/loader/loader";
 
-const block = await getNotionBlock({
-  block_id: process.env.NOTION_ID as string,
-});
-
-let page: Page | null = null;
-if (isChildDatabase(block)) {
-  // Template Database
-  const indexPages = await getPagesByType(PageType.Home);
-  page = indexPages[0];
-} else if (block && isChildPage(block)) {
-  // Freeform Page
-  const notionPage = await getNotionPage({ page_id: block.id });
-  page = notionPage ? toPage(notionPage) : null;
-}
+// FIXME https://docs.astro.build/en/guides/content-collections/
+const collection = await getCollection("database");
+const entry = collection.find(
+  (entry) => entry.id === "f3d90809-9c71-4fbf-a6c4-d792d1b6d3f2",
+);
 ---
 
 {
-  page && (
-    <Layout title={page.title}>
-      <main>
-        <BlockRenderer param={{ block_id: page.id }} />
+  entry && (
+    <Layout title={"title"}>
+      <h1>{entry.id}</h1>
+      <main class="notrotail-page" id={"page.id"}>
+        <NotionBlocks blocks={entry.data.blocks} />
       </main>
     </Layout>
   )
