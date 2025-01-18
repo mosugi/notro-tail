@@ -8,9 +8,10 @@ import Layout from "../layouts/Layout.astro";
 export async function getStaticPaths() {
   const collection = await getCollection("database");
   return collection.map((entry) => {
+    const slug = getPagePropertyText(entry.data.properties, "Slug") || entry.id;
     return {
       params: {
-        slug: entry.id,
+        slug: slug === "index" ? "" : slug,
       },
       props: {
         entry: entry,
@@ -21,12 +22,14 @@ export async function getStaticPaths() {
 
 const collection = await getCollection("database");
 
-const linkToPages: Record<string, { url: string; title: string }> =
+const linkToPages: Record<string, { url?: string; title?: string }> =
   Object.fromEntries(
     collection.map((entry) => [
       entry.id,
-      getPagePropertyText(entry.data.properties, "Slug"),
-      getPagePropertyText(entry.data.properties, "Page"),
+      {
+        url: getPagePropertyText(entry.data.properties, "Slug"),
+        title: getPagePropertyText(entry.data.properties, "Page"),
+      },
     ]),
   );
 

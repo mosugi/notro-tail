@@ -3,7 +3,7 @@ import type { PageObjectResponse } from "@notionhq/client/build/src/api-endpoint
 export const getPagePropertyText = (
   properties: PageObjectResponse["properties"],
   propertyName: string,
-): string | null => {
+): string | undefined => {
   const property = properties?.[propertyName];
 
   if (
@@ -18,5 +18,5 @@ export const getPagePropertyText = (
   ) {
     return property.title[0].plain_text;
   }
-  return null;
+  return undefined;
 };
