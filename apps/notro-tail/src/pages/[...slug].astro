@@ -8,7 +8,6 @@ import Layout from "../layouts/Layout.astro";
 export async function getStaticPaths() {
   const collection = await getCollection("database");
   return collection.map((entry) => {
-    console.log(entry.data.properties);
     const slug = getPagePropertyText(entry.data.properties, "Slug") || entry.id;
     return {
       params: {

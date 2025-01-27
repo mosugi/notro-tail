@@ -101,7 +101,9 @@ NOTION_SECRET=<NOTION_TOKEN>
 
 ### 6. Launch
 
-NotroTail needs Node.js 22 or later.
+NotroTail needs Astro 5.0 and Node.js 22 or later
+
+```bash
 
 Install dependencies
 

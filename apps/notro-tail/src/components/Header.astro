@@ -3,7 +3,8 @@ import { getCollection } from "astro:content";
 import { getPagePropertyText } from "notro/src/utils/notion";
 
 const headerPages = await getCollection("database", ({ data }) => {
-  return getPagePropertyText(data.properties, "Header");
+  const type = getPagePropertyText(data.properties, "Type");
+  return type?.includes("Header");
 });
 ---
 

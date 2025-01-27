@@ -1,12 +1,14 @@
 ---
 import type { CalloutBlockObjectResponse } from "@notionhq/client/build/src/api-endpoints";
 import Callout from "./Callout.astro";
+import * as console from "node:console";
 interface Props {
   block: CalloutBlockObjectResponse;
 }
 
 const extractClassString = (input: string): string | undefined => {
-  const regex = /^class="([^"]*)"/;
+  // ASCIIと全角ダブルクォートの両方に対応（Notion側で変換されることがあるため）
+  const regex = /^class=["|”]([^"|”]*)["|”]/;
   const match = input.match(regex);
   if (match) {
     return match[1].replace(/\r?\n/g, "");

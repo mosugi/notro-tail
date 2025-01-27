@@ -49,7 +49,7 @@ let tempListItems: any = [];
     }
 
     if (block.type === "callout" && options.useCalloutContainer) {
-      return <CalloutOrContainer block={block} />;
+      return <CalloutOrContainer block={block}>{children}</CalloutOrContainer>;
     }
 
     if (block.type === "image" && options.optimizeRemoteImage) {
