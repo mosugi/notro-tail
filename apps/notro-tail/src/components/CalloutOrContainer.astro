@@ -5,24 +5,25 @@ interface Props {
   block: CalloutBlockObjectResponse;
 }
 
-const extractClassString = (input: string): string | undefined => {
-  // ASCIIと全角ダブルクォートの両方に対応（Notion側で変換されることがあるため）
-  const regex = /^class=["|”]([^"|”]*)["|”]/;
-  const match = input.match(regex);
-  if (match) {
-    return match[1].replace(/\r?\n/g, "");
-  }
-  return undefined;
-};
 const { block } = Astro.props;
-const classes = extractClassString(block.callout.rich_text[0]?.plain_text);
+
+const isCustomContainer = block.callout.icon == null;
+// split by ">" and trim each class name
+const classes = block.callout.rich_text[0]?.plain_text
+  .replace(/\r?\n/g, "")
+  .split(">")
+  .map((className) => className.trim());
 ---
 
 {
-  classes !== undefined ? (
-    <div class={classes}>
-      <slot />
-    </div>
+  isCustomContainer && classes ? (
+    // reverse the array and wrap the slot with each class
+    classes.reverse().reduce(
+      (childElement, classNames) => {
+        return <div class={classNames}>{childElement}</div>;
+      },
+      <slot />,
+    )
   ) : (
     <Callout block={block}>
       <slot />
