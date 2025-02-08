@@ -13,6 +13,12 @@ const database = defineCollection({
           direction: "descending",
         },
       ],
+      filter: {
+        property: "Public",
+        checkbox: {
+          equals: true,
+        },
+      },
     },
     clientOptions: {
       auth: import.meta.env.NOTION_TOKEN,
