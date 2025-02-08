@@ -47,12 +47,21 @@ export function loader({
         iteratePaginatedAPI(client.databases.query, queryParameters),
       );
 
-      //TODO Debug code
-      // store.clear();
+      const pages = pageOrDatabases.filter((page) => isFullPage(page));
 
-      const loadPageBlocksPromises = pageOrDatabases
-        .filter((page) => isFullPage(page))
-        .filter((page) => isStored(store, page))
+      // Delete expired or deleted pages
+      store.entries().forEach(([id, { digest }]) => {
+        if (
+          !pages.some((page) => page.id === id) ||
+          isExpired(digest as number)
+        ) {
+          store.delete(id);
+        }
+      });
+
+      // Load new or updated pages
+      const loadPageBlocksPromises = pages
+        .filter((page) => !store.has(page.id))
         .map(
           async (page) => await loadPageBlocks(page, store, client, parseData),
         );
@@ -91,10 +100,13 @@ async function loadPageBlocks<TData>(
     },
   });
 
+  const digest = Date.now();
+
   //TODO ストアされたうち削除されたページは取り除かれるようにする
   store.set({
     id: page.id,
-    digest: page.last_edited_time,
+    digest: digest,
+    // digest: page.last_edited_time,
     data: data,
   });
 }
@@ -128,6 +140,10 @@ async function* retrieveBlockChildren(
   }
 }
 
-function isStored(store: DataStore, page: PageObjectResponse) {
-  return store.get(page.id)?.digest !== page.last_edited_time;
-}
+// FIXME: リモートイメージが先に期限切れする問題が解決したら有効化する
+// const isStored = (store: DataStore, page: PageObjectResponse) =>
+//   store.get(page.id)?.digest !== page.last_edited_time;
+
+const isExpired = (digest: number) => {
+  return digest !== undefined && Date.now() - digest >= 1000 * 60 * 60;
+};
