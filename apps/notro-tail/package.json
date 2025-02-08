@@ -14,11 +14,13 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/sitemap": "^3.2.1",
     "@notionhq/client": "^2.2.15",
-    "astro": "^5.1.7",
+    "@tailwindcss/vite": "^4.0.4",
+    "astro": "^5.2.5",
     "cache-manager": "^5.5.2",
     "cache-manager-fs-hash": "^2.0.0",
     "notro": "^0.0.1",
     "p-retry": "^6.2.0",
+    "tailwindcss": "^4.0.4",
     "typescript": "^5.4.5"
   }
 }
