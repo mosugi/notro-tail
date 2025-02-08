@@ -1,7 +1,7 @@
 import { defineCollection } from "astro:content";
-import { loader } from "notro";
+import { loader, pageObjectSchema } from "notro";
 import { LogLevel } from "@notionhq/client";
-import { z } from "astro/zod";
+import { z } from "zod";
 
 const database = defineCollection({
   loader: loader({
@@ -19,13 +19,7 @@ const database = defineCollection({
       logLevel: LogLevel.DEBUG,
     },
   }),
-  schema: z.object({
-    icon: z.any(),
-    cover: z.any(),
-    archived: z.boolean(),
-    in_trash: z.boolean(),
-    url: z.string(),
-    public_url: z.string(),
+  schema: pageObjectSchema.extend({
     properties: z.object({
       Page: z.any(),
       Description: z.any(),
@@ -35,7 +29,6 @@ const database = defineCollection({
       Type: z.any(),
       Order: z.any(),
     }),
-    blocks: z.any(),
   }),
 });
 
