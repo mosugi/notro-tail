@@ -1,9 +1,11 @@
 ---
 import { getCollection } from "astro:content";
-import { DatabaseProperty, getPlainText, OptimizedDatabaseCover } from "notro";
 import Layout from "../../layouts/Layout.astro";
+import BlogList from "../../components/BlogList.astro";
+import type { PageWithBlocks } from "notro";
 
 const posts = await getCollection("posts");
+const data = posts.map(({ data }) => data as PageWithBlocks);
 
 const currentPath = Astro.url.pathname;
 ---
@@ -11,35 +13,7 @@ const currentPath = Astro.url.pathname;
 <Layout title="Posts">
   <main class="nt-posts">
     <section class="notion-selectable notion-collection_view-block">
-      {
-        posts.length > 0 ? (
-          <ul>
-            {posts.map(({ data }) => (
-              <li>
-                <article class="notion-collection-item">
-                  <a
-                    href={`${currentPath}/${data.properties}${getPlainText(data.properties.Slug)}`}
-                  >
-                    <OptimizedDatabaseCover
-                      cover={data.cover}
-                      alt={getPlainText(data.properties.Name)}
-                    />
-                  </a>
-                  <DatabaseProperty property={data.properties.Date} />
-                  <DatabaseProperty property={data.properties.Category} />
-                  <a
-                    href={`${currentPath}/${getPlainText(data.properties.Slug)}`}
-                  >
-                    {getPlainText(data.properties.Name)}
-                  </a>
-                  <DatabaseProperty property={data.properties.Description} />
-                  <DatabaseProperty property={data.properties.Tags} />
-                </article>
-              </li>
-            ))}
-          </ul>
-        ) : null
-      }
+      <BlogList posts={data} path={currentPath} />
     </section>
   </main>
 </Layout>

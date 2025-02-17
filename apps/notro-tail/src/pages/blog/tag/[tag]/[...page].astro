@@ -1,0 +1,45 @@
+---
+import type { PageWithBlocks } from "notro";
+import type { PaginateFunction } from "astro";
+import { getCollection } from "astro:content";
+import BlogList from "../../../../components/BlogList.astro";
+import Layout from "../../../../layouts/Layout.astro";
+
+export async function getStaticPaths({
+  paginate,
+}: {
+  paginate: PaginateFunction;
+}) {
+  const posts = await getCollection("posts");
+  const tags = posts
+    .map((entry) => {
+      return entry.data.properties.Tags.multi_select.map((tag) => tag.name);
+    })
+    .filter((tag) => tag !== undefined)
+    .flatMap((tag) => tag);
+  return tags.flatMap((tag) => {
+    const filteredPosts = posts.filter((post) =>
+      post.data.properties.Tags.multi_select
+        .map((tag) => tag.name)
+        .includes(tag),
+    );
+    return paginate(filteredPosts, {
+      params: { tag },
+      pageSize: 2,
+    });
+  });
+}
+const { page } = Astro.props;
+const params = Astro.params;
+
+const currentPath = Astro.url.pathname;
+const data = page.data.map(({ data }) => data as PageWithBlocks);
+---
+
+<Layout title={params.tag}>
+  <main class="nt-posts">
+    <section class="notion-selectable notion-collection_view-block">
+      <BlogList posts={data} path={currentPath} />
+    </section>
+  </main>
+</Layout>

@@ -1,0 +1,39 @@
+---
+import { DatabaseProperty, getPlainText, OptimizedDatabaseCover } from "notro";
+import type { PageWithBlocks } from "notro";
+
+interface Props {
+  posts: PageWithBlocks[];
+  path: string;
+}
+
+const { posts, path } = Astro.props;
+---
+
+{
+  posts.length > 0 ? (
+    <ul>
+      {posts.map((data) => (
+        <li>
+          <article class="notion-collection-item">
+            <a
+              href={`${path}/${data.properties}${getPlainText(data.properties.Slug)}`}
+            >
+              <OptimizedDatabaseCover
+                cover={data.cover}
+                alt={getPlainText(data.properties.Name)}
+              />
+            </a>
+            <DatabaseProperty property={data.properties.Date} />
+            <DatabaseProperty property={data.properties.Category} />
+            <a href={`${path}/${getPlainText(data.properties.Slug)}`}>
+              {getPlainText(data.properties.Name)}
+            </a>
+            <DatabaseProperty property={data.properties.Description} />
+            <DatabaseProperty property={data.properties.Tags} />
+          </article>
+        </li>
+      ))}
+    </ul>
+  ) : null
+}
