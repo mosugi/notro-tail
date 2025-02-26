@@ -1,25 +1,33 @@
 {
   "name": "notro",
+  "description": "A Content loader for Astro that uses the Notion Public API",
   "version": "0.0.1",
-  "author": "mosugi",
-  "repository": "github:mosugi/notro-tail",
+  "type": "module",
+  "author": "mosugi <mosugeek@gmail.com>",
   "license": "MIT",
-  "description": "Astro integration for Notion",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mosugi/NotroTail.git",
+    "directory": "packages/notro"
+  },
   "keywords": [
     "astro",
     "withastro",
     "astro-component",
-    "astro-integration",
+    "astro-loader",
     "notion"
   ],
-  "main": "./src/index.ts",
+  "bugs": {
+    "url": "https://github.com/mosugi/NotroTail/issues"
+  },
+  "homepage": "https://notrotail.mosugi.com",
+  "exports": {
+    ".": "./index.ts"
+  },
   "files": [
     "src",
     "README.md"
   ],
-  "exports": {
-    ".": "./index.ts"
-  },
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -27,8 +35,11 @@
     "astro": "astro",
     "format": "prettier --write 'src/**/*.ts' 'src/**/*.astro'"
   },
-  "dependencies": {
+  "devDependencies": {
     "astro": "^5.1.7",
     "typescript": "^5.4.5"
+  },
+  "publishConfig": {
+    "provenance": true
   }
 }
