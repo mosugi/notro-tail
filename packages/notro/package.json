@@ -31,14 +31,10 @@
     "src/utils"
   ],
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "preview": "astro preview",
-    "astro": "astro",
     "format": "prettier --write 'src/**/*.ts' 'src/**/*.astro'"
   },
   "devDependencies": {
-    "astro": "^5.1.7",
+    "astro": "^5.2.5",
     "typescript": "^5.4.5"
   },
   "publishConfig": {
