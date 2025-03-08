@@ -39,5 +39,8 @@
   },
   "publishConfig": {
     "provenance": true
+  },
+  "dependencies": {
+    "@notionhq/client": "^2.2.16"
   }
 }

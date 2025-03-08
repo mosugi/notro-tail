@@ -7,19 +7,14 @@ import {
 } from "@notionhq/client";
 import type { ClientOptions } from "@notionhq/client/build/src/Client";
 import type {
-  BlockObjectResponse,
   PageObjectResponse,
   QueryDatabaseParameters,
 } from "@notionhq/client/build/src/api-endpoints";
-import { pageObjectResponseWithBlocksSchema } from "./schema.ts";
-
-export type PageWithBlocks = PageObjectResponse & {
-  blocks: BlockWithChildren[];
-};
-
-export type BlockWithChildren = BlockObjectResponse & {
-  children: BlockWithChildren[];
-};
+import {
+  type BlockObjectResponseWithChildrenType,
+  type PageObjectResponseWithBlocksType,
+  pageObjectResponseWithBlocksSchema
+} from "./schema.ts";
 
 type LoaderOptions = {
   queryParameters: QueryDatabaseParameters;
@@ -62,7 +57,7 @@ export function loader({
         }
       });
 
-      // store.clear();
+      store.clear();
 
       // Load new or updated pages
       const loadPageBlocksPromises = pages
@@ -108,7 +103,7 @@ async function loadPageBlocks<TData>(
       url: page.url,
       public_url: page.public_url,
       blocks: blocks,
-    } as PageWithBlocks,
+    } as PageObjectResponseWithBlocksType,
   });
 
   const digest = Date.now();
@@ -125,7 +120,7 @@ async function loadPageBlocks<TData>(
 async function* retrieveBlockChildren(
   client: Client,
   blockId: string,
-): AsyncGenerator<BlockWithChildren> {
+): AsyncGenerator<BlockObjectResponseWithChildrenType> {
   for await (const block of iteratePaginatedAPI(client.blocks.children.list, {
     block_id: blockId,
   })) {
@@ -133,7 +128,7 @@ async function* retrieveBlockChildren(
       continue;
     }
 
-    const blockWithChildren: BlockWithChildren = {
+    const blockWithChildren: BlockObjectResponseWithChildrenType = {
       ...block,
       children: [],
     };
