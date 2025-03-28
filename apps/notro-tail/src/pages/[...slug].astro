@@ -45,7 +45,7 @@ const options = {
 <Layout title={entry.id}>
   <main class="nt-page" id={entry.id}>
     <NotionCustomBlocks
-      blocks={entry.data.blocks as unknown as BlockObjectResponseWithChildrenType[]}
+      blocks={entry.data.blocks as BlockObjectResponseWithChildrenType[]}
       linkToPages={linkToPages}
       options={options}
     />

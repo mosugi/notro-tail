@@ -30,6 +30,6 @@ const options = {
 
 <Layout title={entry.id}>
   <main class="nt-page" id={entry.id}>
-    <NotionCustomBlocks blocks={entry.data.blocks as unknown as BlockObjectResponseWithChildrenType[]} options={options} />
+    <NotionCustomBlocks blocks={entry.data.blocks as BlockObjectResponseWithChildrenType[]} options={options} />
   </main>
 </Layout>

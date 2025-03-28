@@ -52,6 +52,7 @@ export function loader({
         }
       });
 
+      // FIXME リモートイメージが先に期限切れする問題が解決したら無効化する
       store.clear();
 
       // Load new or updated pages
@@ -69,7 +70,7 @@ export function loader({
   };
 }
 
-async function loadPageBlocks<TData>(
+async function loadPageBlocks(
   page: PageObjectResponse,
   store: DataStore,
   client: Client,

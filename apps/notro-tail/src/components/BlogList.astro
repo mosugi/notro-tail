@@ -1,8 +1,9 @@
 ---
-import {DatabaseProperty, getPlainText, OptimizedDatabaseCover, type PageObjectResponseWithBlocksType} from "notro";
+import type {PageObjectResponseType} from "notro";
+import {DatabaseProperty, getPlainText, OptimizedDatabaseCover} from "notro";
 
 interface Props {
-  posts: PageObjectResponseWithBlocksType[];
+  posts: PageObjectResponseType[];
   path: string;
 }
 
