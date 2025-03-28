@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* Custom Callout CSS Classes*/
+@source "../../.astro/data-store.json";
 
 /* Notro classed block styles sample*/
 @layer utilities {
