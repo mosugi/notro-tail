@@ -78,7 +78,7 @@ async function loadPageBlocks(
   const blockIterator = retrieveBlockChildren(client, page.id);
   const blocks = await Array.fromAsync(blockIterator);
 
-  const data = await parseData({
+  const data = await parseData<PageObjectResponseWithBlocksType>({
     id: page.id,
     data: {
       parent: page.parent,

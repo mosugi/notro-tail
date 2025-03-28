@@ -67,7 +67,9 @@ let tempListItems: any = [];
       case "bulleted_list_item":
       case "numbered_list_item":
       case "to_do":
-        tempListItems.push(<NotionBlockRenderer block={block}>{children}</NotionBlockRenderer>);
+        tempListItems.push(
+          <NotionBlockRenderer block={block}>{children}</NotionBlockRenderer>,
+        );
         if (block.type !== array[i + 1]?.type) {
           const container = (
             <ListItemContainer type={block.type}>

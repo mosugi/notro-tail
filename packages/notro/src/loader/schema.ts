@@ -2169,11 +2169,6 @@ export const pageObjectResponseSchema = z.object({
   public_url: z.string().nullable(),
 });
 
-export const pageObjectResponseWithBlocksSchema =
-  pageObjectResponseSchema.extend({
-    blocks: z.array(blockObjectResponseSchema),
-  });
-
 export type RichTextItemResponseType = z.infer<
   typeof richTextItemResponseSchema
 >;
@@ -2284,10 +2279,18 @@ export type UnsupportedBlockObjectResponseType = z.infer<
 >;
 export type BlockObjectResponseType = z.infer<typeof blockObjectResponseSchema>;
 
-export type PageObjectResponseWithBlocksType = PageObjectResponseType & {
-  blocks: BlockObjectResponseWithChildrenType[];
-};
+export const blockObjectResponseWithChildrenSchema: z.ZodType = z.lazy(() =>
+    blockObjectResponseSchema.and(
+        z.object({
+          children: z.array(blockObjectResponseWithChildrenSchema).optional(),
+        })
+    )
+);
 
-export type BlockObjectResponseWithChildrenType = BlockObjectResponseType & {
-  children: BlockObjectResponseWithChildrenType[];
-};
+export const pageObjectResponseWithBlocksSchema =
+    pageObjectResponseSchema.extend({
+      blocks: z.array(blockObjectResponseWithChildrenSchema),
+    });
+
+export type BlockObjectResponseWithChildrenType = z.infer<typeof blockObjectResponseWithChildrenSchema>
+export type PageObjectResponseWithBlocksType = z.infer<typeof pageObjectResponseWithBlocksSchema>

@@ -1,6 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import {type BlockObjectResponseWithChildrenType, getPlainText} from "notro";
+import { type BlockObjectResponseWithChildrenType, getPlainText } from "notro";
 import Layout from "../../layouts/Layout.astro";
 import NotionCustomBlocks from "../../components/NotionCustomBlocks.astro";
 
@@ -30,6 +30,9 @@ const options = {
 
 <Layout title={entry.id}>
   <main class="nt-page" id={entry.id}>
-    <NotionCustomBlocks blocks={entry.data.blocks as BlockObjectResponseWithChildrenType[]} options={options} />
+    <NotionCustomBlocks
+      blocks={entry.data.blocks as BlockObjectResponseWithChildrenType[]}
+      options={options}
+    />
   </main>
 </Layout>
