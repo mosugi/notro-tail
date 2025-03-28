@@ -1,5 +1,5 @@
 ---
-import type {SyncedBlockBlockObjectResponseType} from "../loader/schema";
+import type { SyncedBlockBlockObjectResponseType } from "../loader/schema";
 interface Props {
   block: SyncedBlockBlockObjectResponseType;
 }
@@ -7,9 +7,6 @@ interface Props {
 const { block } = Astro.props;
 ---
 
-<div
-  id={block.id}
-  class=`nt-selectable nt-transclusion_reference-block`
->
+<div id={block.id} class=`nt-selectable nt-transclusion_reference-block`>
   <slot />
 </div>

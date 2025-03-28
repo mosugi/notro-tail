@@ -2169,53 +2169,124 @@ export const pageObjectResponseSchema = z.object({
   public_url: z.string().nullable(),
 });
 
-export const pageObjectResponseWithBlocksSchema = pageObjectResponseSchema.extend({
-  blocks: z.array(blockObjectResponseSchema),
-});
+export const pageObjectResponseWithBlocksSchema =
+  pageObjectResponseSchema.extend({
+    blocks: z.array(blockObjectResponseSchema),
+  });
 
-export type RichTextItemResponseType = z.infer<typeof richTextItemResponseSchema>;
+export type RichTextItemResponseType = z.infer<
+  typeof richTextItemResponseSchema
+>;
 
-export type PropertyPageObjectResponseType = z.infer<typeof propertyPageObjectResponseSchema>;
+export type PropertyPageObjectResponseType = z.infer<
+  typeof propertyPageObjectResponseSchema
+>;
 export type PageObjectResponseType = z.infer<typeof pageObjectResponseSchema>;
 
-export type ParagraphBlockObjectResponseType = z.infer<typeof paragraphBlockObjectResponseSchema>;
-export type Heading1BlockObjectResponseType = z.infer<typeof heading1BlockObjectResponseSchema>;
-export type Heading2BlockObjectResponseType = z.infer<typeof heading2BlockObjectResponseSchema>;
-export type Heading3BlockObjectResponseType = z.infer<typeof heading3BlockObjectResponseSchema>;
-export type BulletedListItemBlockObjectResponseType = z.infer<typeof bulletedListItemBlockObjectResponseSchema>;
-export type NumberedListItemBlockObjectResponseType = z.infer<typeof numberedListItemBlockObjectResponseSchema>;
-export type QuoteBlockObjectResponseType = z.infer<typeof quoteBlockObjectResponseSchema>;
-export type ToDoBlockObjectResponseType = z.infer<typeof toDoBlockObjectResponseSchema>;
-export type ToggleBlockObjectResponseType = z.infer<typeof toggleBlockObjectResponseSchema>;
-export type TemplateBlockObjectResponseType = z.infer<typeof templateBlockObjectResponseSchema>;
-export type SyncedBlockBlockObjectResponseType = z.infer<typeof syncedBlockBlockObjectResponseSchema>;
-export type ChildPageBlockObjectResponseType = z.infer<typeof childPageBlockObjectResponseSchema>;
-export type ChildDatabaseBlockObjectResponseType = z.infer<typeof childDatabaseBlockObjectResponseSchema>;
-export type EquationBlockObjectResponseType = z.infer<typeof equationBlockObjectResponseSchema>;
-export type CodeBlockObjectResponseType = z.infer<typeof codeBlockObjectResponseSchema>;
-export type CalloutBlockObjectResponseType = z.infer<typeof calloutBlockObjectResponseSchema>;
-export type DividerBlockObjectResponseType = z.infer<typeof dividerBlockObjectResponseSchema>;
-export type BreadcrumbBlockObjectResponseType = z.infer<typeof breadcrumbBlockObjectResponseSchema>;
-export type TableOfContentsBlockObjectResponseType = z.infer<typeof tableOfContentsBlockObjectResponseSchema>;
-export type ColumnListBlockObjectResponseType = z.infer<typeof columnListBlockObjectResponseSchema>;
-export type ColumnBlockObjectResponseType = z.infer<typeof columnBlockObjectResponseSchema>;
-export type LinkToPageBlockObjectResponseType = z.infer<typeof linkToPageBlockObjectResponseSchema>;
-export type TableBlockObjectResponseType = z.infer<typeof tableBlockObjectResponseSchema>;
-export type TableRowBlockObjectResponseType = z.infer<typeof tableRowBlockObjectResponseSchema>;
-export type EmbedBlockObjectResponseType = z.infer<typeof embedBlockObjectResponseSchema>;
-export type BookmarkBlockObjectResponseType = z.infer<typeof bookmarkBlockObjectResponseSchema>;
-export type ImageBlockObjectResponseType = z.infer<typeof imageBlockObjectResponseSchema>;
-export type VideoBlockObjectResponseType = z.infer<typeof videoBlockObjectResponseSchema>;
-export type PdfBlockObjectResponseType = z.infer<typeof pdfBlockObjectResponseSchema>;
-export type FileBlockObjectResponseType = z.infer<typeof fileBlockObjectResponseSchema>;
-export type AudioBlockObjectResponseType = z.infer<typeof audioBlockObjectResponseSchema>;
-export type LinkPreviewBlockObjectResponseType = z.infer<typeof linkPreviewBlockObjectResponseSchema>;
-export type UnsupportedBlockObjectResponseType = z.infer<typeof unsupportedBlockObjectResponseSchema>;
+export type ParagraphBlockObjectResponseType = z.infer<
+  typeof paragraphBlockObjectResponseSchema
+>;
+export type Heading1BlockObjectResponseType = z.infer<
+  typeof heading1BlockObjectResponseSchema
+>;
+export type Heading2BlockObjectResponseType = z.infer<
+  typeof heading2BlockObjectResponseSchema
+>;
+export type Heading3BlockObjectResponseType = z.infer<
+  typeof heading3BlockObjectResponseSchema
+>;
+export type BulletedListItemBlockObjectResponseType = z.infer<
+  typeof bulletedListItemBlockObjectResponseSchema
+>;
+export type NumberedListItemBlockObjectResponseType = z.infer<
+  typeof numberedListItemBlockObjectResponseSchema
+>;
+export type QuoteBlockObjectResponseType = z.infer<
+  typeof quoteBlockObjectResponseSchema
+>;
+export type ToDoBlockObjectResponseType = z.infer<
+  typeof toDoBlockObjectResponseSchema
+>;
+export type ToggleBlockObjectResponseType = z.infer<
+  typeof toggleBlockObjectResponseSchema
+>;
+export type TemplateBlockObjectResponseType = z.infer<
+  typeof templateBlockObjectResponseSchema
+>;
+export type SyncedBlockBlockObjectResponseType = z.infer<
+  typeof syncedBlockBlockObjectResponseSchema
+>;
+export type ChildPageBlockObjectResponseType = z.infer<
+  typeof childPageBlockObjectResponseSchema
+>;
+export type ChildDatabaseBlockObjectResponseType = z.infer<
+  typeof childDatabaseBlockObjectResponseSchema
+>;
+export type EquationBlockObjectResponseType = z.infer<
+  typeof equationBlockObjectResponseSchema
+>;
+export type CodeBlockObjectResponseType = z.infer<
+  typeof codeBlockObjectResponseSchema
+>;
+export type CalloutBlockObjectResponseType = z.infer<
+  typeof calloutBlockObjectResponseSchema
+>;
+export type DividerBlockObjectResponseType = z.infer<
+  typeof dividerBlockObjectResponseSchema
+>;
+export type BreadcrumbBlockObjectResponseType = z.infer<
+  typeof breadcrumbBlockObjectResponseSchema
+>;
+export type TableOfContentsBlockObjectResponseType = z.infer<
+  typeof tableOfContentsBlockObjectResponseSchema
+>;
+export type ColumnListBlockObjectResponseType = z.infer<
+  typeof columnListBlockObjectResponseSchema
+>;
+export type ColumnBlockObjectResponseType = z.infer<
+  typeof columnBlockObjectResponseSchema
+>;
+export type LinkToPageBlockObjectResponseType = z.infer<
+  typeof linkToPageBlockObjectResponseSchema
+>;
+export type TableBlockObjectResponseType = z.infer<
+  typeof tableBlockObjectResponseSchema
+>;
+export type TableRowBlockObjectResponseType = z.infer<
+  typeof tableRowBlockObjectResponseSchema
+>;
+export type EmbedBlockObjectResponseType = z.infer<
+  typeof embedBlockObjectResponseSchema
+>;
+export type BookmarkBlockObjectResponseType = z.infer<
+  typeof bookmarkBlockObjectResponseSchema
+>;
+export type ImageBlockObjectResponseType = z.infer<
+  typeof imageBlockObjectResponseSchema
+>;
+export type VideoBlockObjectResponseType = z.infer<
+  typeof videoBlockObjectResponseSchema
+>;
+export type PdfBlockObjectResponseType = z.infer<
+  typeof pdfBlockObjectResponseSchema
+>;
+export type FileBlockObjectResponseType = z.infer<
+  typeof fileBlockObjectResponseSchema
+>;
+export type AudioBlockObjectResponseType = z.infer<
+  typeof audioBlockObjectResponseSchema
+>;
+export type LinkPreviewBlockObjectResponseType = z.infer<
+  typeof linkPreviewBlockObjectResponseSchema
+>;
+export type UnsupportedBlockObjectResponseType = z.infer<
+  typeof unsupportedBlockObjectResponseSchema
+>;
 export type BlockObjectResponseType = z.infer<typeof blockObjectResponseSchema>;
 
 export type PageObjectResponseWithBlocksType = PageObjectResponseType & {
   blocks: BlockObjectResponseWithChildrenType[];
-}
+};
 
 export type BlockObjectResponseWithChildrenType = BlockObjectResponseType & {
   children: BlockObjectResponseWithChildrenType[];

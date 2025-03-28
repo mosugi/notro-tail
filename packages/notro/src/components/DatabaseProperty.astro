@@ -1,6 +1,6 @@
 ---
 import RichText from "./RichText.astro";
-import type {PropertyPageObjectResponseType} from "../loader/schema.ts";
+import type { PropertyPageObjectResponseType } from "../loader/schema.ts";
 
 interface Props {
   property: PropertyPageObjectResponseType;
@@ -24,9 +24,7 @@ const { property } = Astro.props;
         case "select":
           return (
             property.select && (
-              <span class="nt-property-select">
-                {property.select?.name}
-              </span>
+              <span class="nt-property-select">{property.select?.name}</span>
             )
           );
         case "multi_select":
@@ -34,9 +32,7 @@ const { property } = Astro.props;
             property.multi_select.length > 0 && (
               <div class="nt-property-multi-select">
                 {property.multi_select.map((item) => {
-                  return (
-                    <span class="nt-property-select">{item.name}</span>
-                  );
+                  return <span class="nt-property-select">{item.name}</span>;
                 })}
               </div>
             )
@@ -44,10 +40,7 @@ const { property } = Astro.props;
         case "date":
           return (
             property.date && (
-              <time
-                class="nt-property-date"
-                datetime={property.date?.start}
-              >
+              <time class="nt-property-date" datetime={property.date?.start}>
                 {property.date?.start}
               </time>
             )

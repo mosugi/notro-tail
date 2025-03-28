@@ -1,4 +1,4 @@
-import type {PropertyPageObjectResponseType} from "../loader/schema.ts";
+import type { PropertyPageObjectResponseType } from "../loader/schema.ts";
 
 export const getPlainText = (
   property: PropertyPageObjectResponseType,

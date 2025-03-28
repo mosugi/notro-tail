@@ -1,5 +1,5 @@
 ---
-import type {LinkToPageBlockObjectResponseType} from "../loader/schema.ts";
+import type { LinkToPageBlockObjectResponseType } from "../loader/schema.ts";
 
 interface Props {
   block: LinkToPageBlockObjectResponseType;
@@ -10,10 +10,6 @@ interface Props {
 const { block, href, text } = Astro.props;
 ---
 
-<a
-  id={block.id}
-  class=`nt-selectable nt-alias-block`
-  href={href ?? block.id}
->
+<a id={block.id} class=`nt-selectable nt-alias-block` href={href ?? block.id}>
   {text ?? block.id}
 </a>

@@ -13,7 +13,7 @@ import type {
 import {
   type BlockObjectResponseWithChildrenType,
   type PageObjectResponseWithBlocksType,
-  pageObjectResponseWithBlocksSchema
+  pageObjectResponseWithBlocksSchema,
 } from "./schema.ts";
 
 type LoaderOptions = {
@@ -31,10 +31,7 @@ export function loader({
   // Return a loader object
   return {
     name: "notro-loader",
-    load: async ({
-      store,
-      parseData,
-    }): Promise<void> => {
+    load: async ({ store, parseData }): Promise<void> => {
       // Load data and update the store
       const pageOrDatabases = await Array.fromAsync(
         iteratePaginatedAPI(client.databases.query, queryParameters),
