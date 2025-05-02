@@ -31,7 +31,7 @@ export function loader({
   // Return a loader object
   return {
     name: "notro-loader",
-    load: async ({ store, parseData }): Promise<void> => {
+    load: async ({ store, parseData, logger }): Promise<void> => {
       // Load data and update the store
       const pageOrDatabases = await Array.fromAsync(
         iteratePaginatedAPI(client.databases.query, queryParameters),
@@ -42,21 +42,21 @@ export function loader({
       // Delete expired or deleted pages
       store.entries().forEach(([id, { digest }]) => {
         if (
-          !pages.some((page) => page.id === id) ||
-          isExpired(digest as number)
+          !pages.some((page) => page.id === id) || pages.some((page) => page.id === id && digest !== page.last_edited_time || isExpired(digest as number))
         ) {
+          logger.info(`Deleting page ${id} from store`);
           store.delete(id);
         }
-      });
-
-      // FIXME リモートイメージが先に期限切れする問題が解決したら無効化する
-      store.clear();
+      });　　
 
       // Load new or updated pages
       const loadPageBlocksPromises = pages
         .filter((page) => !store.has(page.id))
         .map(
-          async (page) => await loadPageBlocks(page, store, client, parseData),
+          async (page) => {
+            logger.info(`Loading page ${page.id} into store`);
+            await loadPageBlocks(page, store, client, parseData)
+          }
         );
 
       //FIXME use p-queue and Retry for 3rps limit
@@ -99,13 +99,9 @@ async function loadPageBlocks(
     } as PageObjectResponseWithBlocksType,
   });
 
-  const digest = Date.now();
-
   store.set({
     id: page.id,
-    digest: digest,
-    // TODO リモートイメージが先に期限切れする問題が解決したら有効化する
-    // digest: page.last_edited_time,
+    digest: page.last_edited_time,
     data: data,
   });
 }
@@ -139,10 +135,9 @@ async function* retrieveBlockChildren(
   }
 }
 
-// FIXME: リモートイメージが先に期限切れする問題が解決したら有効化する
-// const isStored = (store: DataStore, page: PageObjectResponse) =>
-//   store.get(page.id)?.digest !== page.last_edited_time;
-
+// Notion images are expired after 1 hour
 const isExpired = (digest: number) => {
-  return digest !== undefined && Date.now() - digest >= 1000 * 60 * 60;
+  // TODO: 環境変数で1時間で再取得するかどうかを指定できるようにする
+  return false
+  // return digest !== undefined && Date.now() - digest >= 1000 * 60 * 60;
 };

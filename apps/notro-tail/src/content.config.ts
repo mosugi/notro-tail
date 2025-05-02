@@ -10,7 +10,6 @@ import {
   selectPropertyPageObjectResponseSchema,
   titlePropertyPageObjectResponseSchema,
 } from "notro";
-import { LogLevel } from "@notionhq/client";
 import { z } from "zod";
 
 const pagesCollection = defineCollection({
@@ -32,7 +31,6 @@ const pagesCollection = defineCollection({
     },
     clientOptions: {
       auth: import.meta.env.NOTION_TOKEN,
-      logLevel: LogLevel.DEBUG,
     },
   }),
   schema: pageObjectResponseWithBlocksSchema.extend({
@@ -65,7 +63,6 @@ const postsCollection = defineCollection({
     },
     clientOptions: {
       auth: import.meta.env.NOTION_TOKEN,
-      logLevel: LogLevel.DEBUG,
     },
   }),
   schema: pageObjectResponseWithBlocksSchema.extend({

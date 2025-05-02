@@ -1,9 +1,10 @@
 @import "tailwindcss";
-/* Custom Callout CSS Classes*/
+/* Custom Callout CSS Classes */
+/* @see https://docs.astro.build/en/reference/configuration-reference/#cachedir */
+/* https://github.com/withastro/astro/blob/astro%405.7.9/packages/astro/src/content/content-layer.ts#L416-L423 */
 @source "../../.astro/data-store.json";
 @source "../../node_modules/.astro/data-store.json";
 
-/* Notro classed block styles sample*/
 @layer utilities {
     .hero {
         @apply mx-auto max-w-screen-xl px-4 py-32 lg:flex lg:h-screen lg:items-center;
