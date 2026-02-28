@@ -26,3 +26,4 @@ pnpm-debug.log*
 .vercel/
 cache/
 .vercel
+.env*.local
