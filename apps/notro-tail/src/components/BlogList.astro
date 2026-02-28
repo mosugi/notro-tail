@@ -21,6 +21,7 @@ const { posts, path } = Astro.props;
             >
               <OptimizedDatabaseCover
                 cover={data.cover}
+                pageId={data.id}
                 alt={getPlainText(data.properties.Name)}
               />
             </a>

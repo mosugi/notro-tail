@@ -1,23 +1,70 @@
 ---
 import { Image as AstroImage } from "astro:assets";
 import type { PageObjectResponseType } from "../loader/schema.ts";
+
 interface Props {
   cover: PageObjectResponseType["cover"];
+  /** Notion page ID — used as the stable cache key (`id` prop) for Notion-uploaded
+   *  file images, since their S3 URLs contain expiring signatures. */
+  pageId?: string;
   alt?: string;
 }
 
-const { cover, alt } = Astro.props;
+const { cover, pageId, alt } = Astro.props;
 
-const imageUrl = cover?.type === "file" ? cover?.file.url : cover?.external.url;
+const isNotionFile = cover?.type === "file";
+const imageUrl = isNotionFile
+  ? cover.file.url
+  : cover?.type === "external"
+    ? cover.external.url
+    : null;
+
+// Notion-uploaded files use signed S3 URLs (1-hour expiry).
+// We must NOT use inferSize because that triggers a second fetch inside Astro's
+// pipeline which may fail if the URL already expired.
+// Instead, fetch the image here (at collection load time) and use sharp to get
+// the dimensions, then pass explicit width/height to <AstroImage>.
+let notionFileDimensions: { width: number; height: number } | null = null;
+if (isNotionFile && imageUrl) {
+  try {
+    const res = await fetch(imageUrl);
+    if (res.ok) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      const sharp = (await import("sharp")).default;
+      const meta = await sharp(buf).metadata();
+      if (meta.width && meta.height) {
+        notionFileDimensions = { width: meta.width, height: meta.height };
+      }
+    }
+  } catch {
+    // dimensions unavailable — fall back to plain <img>
+  }
+}
 ---
 
 {
   imageUrl ? (
-    <AstroImage
-      src={imageUrl}
-      alt={alt ?? ""}
-      inferSize={true}
-      class="nt-collection-cover"
-    />
+    isNotionFile ? (
+      notionFileDimensions ? (
+        <AstroImage
+          src={imageUrl}
+          alt={alt ?? ""}
+          width={notionFileDimensions.width}
+          height={notionFileDimensions.height}
+          class="nt-collection-cover"
+          {...(pageId ? { id: pageId } : {})}
+        />
+      ) : (
+        /* Sharp failed or image unavailable — render without optimization */
+        <img src={imageUrl} alt={alt ?? ""} class="nt-collection-cover" />
+      )
+    ) : (
+      <AstroImage
+        src={imageUrl}
+        alt={alt ?? ""}
+        inferSize={true}
+        class="nt-collection-cover"
+      />
+    )
   ) : null
 }

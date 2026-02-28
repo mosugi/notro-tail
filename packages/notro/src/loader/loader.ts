@@ -90,6 +90,20 @@ export function loader({
           });
         });
 
+      // Notion file covers use signed S3 URLs that expire after 1 hour.
+      // For cached pages (content unchanged), refresh the cover URL from the
+      // latest page metadata so the build always has a valid URL.
+      // We omit `digest` so that store.set() does not skip the update.
+      pages
+        .filter((page) => store.has(page.id) && page.cover?.type === "file")
+        .forEach((page) => {
+          const entry = store.get(page.id);
+          if (entry) {
+            const { digest: _digest, ...entryWithoutDigest } = entry;
+            store.set({ ...entryWithoutDigest, data: { ...entry.data, cover: page.cover } });
+          }
+        });
+
       //FIXME use p-queue and Retry for 3rps limit
       await Promise.all(loadPageMarkdownPromises);
     },

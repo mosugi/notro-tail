@@ -6,6 +6,7 @@ import { visit, SKIP } from "unist-util-visit";
 // - <empty-block/> → removed (empty comment node)
 // - <unknown .../> → removed
 // - <synced_block_reference> → removed
+// - <synced_block url="..."> → unwrapped (render children as-is)
 export const cleanupPlugin: Plugin<[], Root> = () => {
   return (tree) => {
     visit(tree, "element", (node: Element, index, parent) => {
@@ -21,6 +22,12 @@ export const cleanupPlugin: Plugin<[], Root> = () => {
           value: ` notion:${node.tagName} `,
         };
         parent.children.splice(index, 1, comment);
+        return SKIP;
+      }
+
+      // <synced_block url="..."> → render children directly
+      if (node.tagName === "synced_block") {
+        parent.children.splice(index, 1, ...node.children);
         return SKIP;
       }
     });
