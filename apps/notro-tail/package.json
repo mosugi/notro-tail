@@ -12,13 +12,12 @@
     "format": "prettier --write 'src/**/*.ts' 'src/**/*.astro'"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.4",
-    "@astrojs/sitemap": "^3.2.1",
-    "@tailwindcss/vite": "^4.0.9",
-    "astro": "^5.2.5",
+    "@astrojs/check": "^0.9.6",
+    "@astrojs/sitemap": "^3.7.0",
+    "@tailwindcss/vite": "^4.2.1",
+    "astro": "^5.18.0",
     "notro": "^0.0.1",
-    "p-retry": "^6.2.0",
-    "tailwindcss": "^4.0.9",
-    "typescript": "^5.4.5"
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
   }
 }
