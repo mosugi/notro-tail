@@ -12,20 +12,24 @@ export async function getStaticPaths({
 }) {
   const posts = await getCollection("posts");
   return paginate(posts, {
-    pageSize: 2,
+    pageSize: 10,
   });
 }
 
 const { page } = Astro.props;
 
-const currentPath = Astro.url.pathname;
 const data = page.data.map(({ data }) => data as PageObjectResponseType);
 ---
 
 <Layout title="Blog">
   <main class="nt-posts">
     <section class="nt-selectable nt-collection_view-block">
-      <BlogList posts={data} path={currentPath} />
+      <BlogList posts={data} />
     </section>
+    <nav class="nt-pagination">
+      {page.url.prev && <a href={page.url.prev}>← 前へ</a>}
+      <span>{page.currentPage} / {page.lastPage}</span>
+      {page.url.next && <a href={page.url.next}>次へ →</a>}
+    </nav>
   </main>
 </Layout>

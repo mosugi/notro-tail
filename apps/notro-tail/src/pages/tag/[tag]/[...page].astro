@@ -1,8 +1,8 @@
 ---
 import type { PaginateFunction } from "astro";
 import { getCollection } from "astro:content";
-import BlogList from "../../../../components/BlogList.astro";
-import Layout from "../../../../layouts/Layout.astro";
+import BlogList from "../../../components/BlogList.astro";
+import Layout from "../../../layouts/Layout.astro";
 import type { PageObjectResponseType } from "notro";
 
 export async function getStaticPaths({
@@ -11,35 +11,39 @@ export async function getStaticPaths({
   paginate: PaginateFunction;
 }) {
   const posts = await getCollection("posts");
-  const tags = posts
-    .map((entry) => {
-      return entry.data.properties.Tags.multi_select.map((tag) => tag.name);
-    })
-    .filter((tag) => tag !== undefined)
-    .flatMap((tag) => tag);
+  const tags = [
+    ...new Set(
+      posts.flatMap((entry) =>
+        entry.data.properties.Tags.multi_select.map((tag) => tag.name),
+      ),
+    ),
+  ];
   return tags.flatMap((tag) => {
     const filteredPosts = posts.filter((post) =>
-      post.data.properties.Tags.multi_select
-        .map((tag) => tag.name)
-        .includes(tag),
+      post.data.properties.Tags.multi_select.some((t) => t.name === tag),
     );
     return paginate(filteredPosts, {
       params: { tag },
-      pageSize: 2,
+      pageSize: 10,
     });
   });
 }
-const { page } = Astro.props;
-const params = Astro.params;
 
-const currentPath = Astro.url.pathname;
+const { page } = Astro.props;
+const { tag } = Astro.params;
+
 const data = page.data.map(({ data }) => data as PageObjectResponseType);
 ---
 
-<Layout title={params.tag}>
+<Layout title={`タグ: ${tag}`}>
   <main class="nt-posts">
     <section class="nt-selectable nt-collection_view-block">
-      <BlogList posts={data} path={currentPath} />
+      <BlogList posts={data} />
     </section>
+    <nav class="nt-pagination">
+      {page.url.prev && <a href={page.url.prev}>← 前へ</a>}
+      <span>{page.currentPage} / {page.lastPage}</span>
+      {page.url.next && <a href={page.url.next}>次へ →</a>}
+    </nav>
   </main>
 </Layout>

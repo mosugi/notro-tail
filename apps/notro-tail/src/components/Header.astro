@@ -1,29 +1,11 @@
 ---
-import { getCollection } from "astro:content";
-import { getPlainText } from "notro";
-
-const headerPages = await getCollection("pages", ({ data }) => {
-  return data.properties.Type.multi_select.some((t) => t.name === "Header");
-});
 ---
 
-{
-  headerPages.length > 0 ? (
-    <header>
-      <nav>
-        <ul>
-          {headerPages.map(({ data }) => (
-            <li>
-              <a href={"/" + getPlainText(data.properties.Slug)}>
-                {getPlainText(data.properties.Page)}
-              </a>
-            </li>
-          ))}
-          <li>
-            <a href="/blog">Blog</a>
-          </li>
-        </ul>
-      </nav>
-    </header>
-  ) : null
-}
+<header>
+  <nav>
+    <ul>
+      <li><a href="/">Home</a></li>
+      <li><a href="/blog">Blog</a></li>
+    </ul>
+  </nav>
+</header>

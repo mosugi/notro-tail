@@ -1,26 +1,8 @@
 ---
-import { getCollection } from "astro:content";
-import { getPlainText } from "notro";
-
-const footerPages = await getCollection("pages", ({ data }) => {
-  return data.properties.Type.multi_select.some((t) => t.name === "Footer");
-});
 ---
 
-{
-  footerPages.length > 0 ? (
-    <footer>
-      <div>
-        <ul>
-          {footerPages.map(({ data }) => (
-            <li>
-              <a href={"/" + getPlainText(data.properties.Slug)}>
-                {getPlainText(data.properties.Page)}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </footer>
-  ) : null
-}
+<footer>
+  <div>
+    <p>&copy; {new Date().getFullYear()}</p>
+  </div>
+</footer>

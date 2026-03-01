@@ -12,11 +12,11 @@ import {
 import Layout from "../layouts/Layout.astro";
 
 export async function getStaticPaths() {
-  const collection = await getCollection("pages");
+  const collection = await getCollection("posts");
   return collection.map((entry) => {
     const slug = getPlainText(entry.data.properties.Slug) || entry.id;
     return {
-      params: { slug: slug !== "index" ? slug : undefined },
+      params: { slug },
       props: { entry },
     };
   });
@@ -26,7 +26,7 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 ---
 
-<Layout title={getPlainText(entry.data.properties.Page) ?? entry.id}>
+<Layout title={getPlainText(entry.data.properties.Name) ?? entry.id}>
   <main class="nt-page" id={entry.id}>
     <Content
       components={{

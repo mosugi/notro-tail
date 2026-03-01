@@ -4,46 +4,11 @@ import {
   datePropertyPageObjectResponseSchema,
   loader,
   multiSelectPropertyPageObjectResponseSchema,
-  numberPropertyPageObjectResponseSchema,
   pageWithMarkdownSchema,
   richTextPropertyPageObjectResponseSchema,
-  selectPropertyPageObjectResponseSchema,
   titlePropertyPageObjectResponseSchema,
 } from "notro";
 import { z } from "zod";
-
-const pagesCollection = defineCollection({
-  loader: loader({
-    queryParameters: {
-      data_source_id: import.meta.env.NOTION_PAGES_ID,
-      sorts: [
-        {
-          property: "Order",
-          direction: "ascending",
-        },
-      ],
-      filter: {
-        property: "Public",
-        checkbox: {
-          equals: true,
-        },
-      },
-    },
-    clientOptions: {
-      auth: import.meta.env.NOTION_TOKEN,
-    },
-  }),
-  schema: pageWithMarkdownSchema.extend({
-    properties: z.object({
-      Page: titlePropertyPageObjectResponseSchema,
-      Public: checkboxPropertyPageObjectResponseSchema,
-      Slug: richTextPropertyPageObjectResponseSchema,
-      Type: multiSelectPropertyPageObjectResponseSchema,
-      Order: numberPropertyPageObjectResponseSchema,
-      Description: richTextPropertyPageObjectResponseSchema,
-    }),
-  }),
-});
 
 const postsCollection = defineCollection({
   loader: loader({
@@ -73,13 +38,11 @@ const postsCollection = defineCollection({
       Public: checkboxPropertyPageObjectResponseSchema,
       Slug: richTextPropertyPageObjectResponseSchema,
       Tags: multiSelectPropertyPageObjectResponseSchema,
-      Category: selectPropertyPageObjectResponseSchema,
       Date: datePropertyPageObjectResponseSchema,
     }),
   }),
 });
 
 export const collections = {
-  pages: pagesCollection,
   posts: postsCollection,
 };
