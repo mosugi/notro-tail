@@ -1,0 +1,19 @@
+---
+// Component mapping target for <img> elements in Notion markdown content.
+// Wraps the Astro-optimized image (processed by imagePlugin) in a <figure>
+// and renders the alt text as a visible <figcaption> when present.
+interface Props {
+  src: string;
+  alt?: string;
+  width?: string | number;
+  height?: string | number;
+  [key: string]: unknown;
+}
+
+const { src, alt = "", width, height } = Astro.props;
+---
+
+<figure class="nt-image">
+  <img src={src} alt={alt} width={width} height={height} loading="lazy" decoding="async" />
+  {alt && <figcaption class="nt-image-caption">{alt}</figcaption>}
+</figure>

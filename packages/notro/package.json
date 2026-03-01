@@ -22,12 +22,14 @@
   },
   "homepage": "https://notrotail.mosugi.com",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./config": "./src/markdown/notroMarkdownConfig.ts"
   },
   "files": [
     "index.ts",
     "src/components",
     "src/loader",
+    "src/markdown",
     "src/utils"
   ],
   "scripts": {

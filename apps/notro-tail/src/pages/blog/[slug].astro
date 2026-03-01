@@ -1,6 +1,14 @@
 ---
-import { getCollection } from "astro:content";
-import { getPlainText, NotionMarkdownRenderer } from "notro";
+import { getCollection, render } from "astro:content";
+import {
+  getPlainText,
+  NotionImage,
+  NotionH1,
+  NotionH2,
+  NotionH3,
+  NotionBlockquote,
+  NotionTable,
+} from "notro";
 import Layout from "../../layouts/Layout.astro";
 
 export async function getStaticPaths() {
@@ -15,10 +23,20 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
+const { Content } = await render(entry);
 ---
 
 <Layout title={getPlainText(entry.data.properties.Name) ?? entry.id}>
   <main class="nt-page" id={entry.id}>
-    <NotionMarkdownRenderer markdown={entry.data.markdown} />
+    <Content
+      components={{
+        img: NotionImage,
+        h1: NotionH1,
+        h2: NotionH2,
+        h3: NotionH3,
+        blockquote: NotionBlockquote,
+        table: NotionTable,
+      }}
+    />
   </main>
 </Layout>

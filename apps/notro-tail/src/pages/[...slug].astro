@@ -1,33 +1,42 @@
 ---
-import { getCollection } from "astro:content";
-import { getPlainText, NotionMarkdownRenderer } from "notro";
+import { getCollection, render } from "astro:content";
+import {
+  getPlainText,
+  NotionImage,
+  NotionH1,
+  NotionH2,
+  NotionH3,
+  NotionBlockquote,
+  NotionTable,
+} from "notro";
 import Layout from "../layouts/Layout.astro";
 
 export async function getStaticPaths() {
   const collection = await getCollection("pages");
-  const linkToPages = Object.fromEntries(
-    collection.map((e) => [
-      e.id,
-      {
-        url: getPlainText(e.data.properties.Slug) ?? e.id,
-        title: getPlainText(e.data.properties.Page) ?? "",
-      },
-    ])
-  );
   return collection.map((entry) => {
     const slug = getPlainText(entry.data.properties.Slug) || entry.id;
     return {
       params: { slug: slug !== "index" ? slug : undefined },
-      props: { entry, linkToPages },
+      props: { entry },
     };
   });
 }
 
-const { entry, linkToPages } = Astro.props;
+const { entry } = Astro.props;
+const { Content } = await render(entry);
 ---
 
 <Layout title={getPlainText(entry.data.properties.Page) ?? entry.id}>
   <main class="nt-page" id={entry.id}>
-    <NotionMarkdownRenderer markdown={entry.data.markdown} linkToPages={linkToPages} />
+    <Content
+      components={{
+        img: NotionImage,
+        h1: NotionH1,
+        h2: NotionH2,
+        h3: NotionH3,
+        blockquote: NotionBlockquote,
+        table: NotionTable,
+      }}
+    />
   </main>
 </Layout>

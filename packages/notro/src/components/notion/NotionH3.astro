@@ -1,0 +1,16 @@
+---
+// Component mapping target for <h3> elements in Notion markdown content.
+// Adds an anchor link when the element has an id (set by tableOfContentsPlugin).
+interface Props {
+  id?: string;
+  class?: string;
+  [key: string]: unknown;
+}
+
+const { id, class: className, ...rest } = Astro.props;
+---
+
+<h3 id={id} class:list={["nt-h3", className]} {...rest}>
+  {id && <a href={`#${id}`} class="nt-heading-anchor" aria-hidden="true">#</a>}
+  <slot />
+</h3>
