@@ -7,6 +7,7 @@ import rehypeStringify from "rehype-stringify";
 import { calloutPlugin } from "./plugins/callout.ts";
 import { columnsPlugin } from "./plugins/columns.ts";
 import { colorPlugin } from "./plugins/color.ts";
+import { imagePlugin } from "./plugins/image.ts";
 import { pageLinkPlugin } from "./plugins/page-link.ts";
 import { togglePlugin } from "./plugins/toggle.ts";
 import { cleanupPlugin } from "./plugins/cleanup.ts";
@@ -23,6 +24,7 @@ export async function transformNotionMarkdown(
     .use(calloutPlugin)
     .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeRaw)
+    .use(imagePlugin)
     .use(columnsPlugin)
     .use(colorPlugin)
     .use(pageLinkPlugin, { linkToPages: options?.linkToPages ?? {} })
