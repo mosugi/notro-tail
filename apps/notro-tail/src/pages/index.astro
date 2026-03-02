@@ -1,0 +1,89 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="NotroTail — Notion to Astro static site generator">
+  <main>
+    <div class="hero">
+      <div class="container">
+        <h1 class="text-3xl font-extrabold sm:text-5xl">
+          Notion as your CMS.
+          <strong class="font-extrabold text-blue-600 sm:block">
+            Astro as your site.
+          </strong>
+        </h1>
+
+        <p class="mt-4 sm:text-xl/relaxed text-gray-600">
+          NotroTail fetches content from Notion via the Public API, renders it
+          through a custom remark/rehype pipeline, and outputs a fast,
+          SEO-optimized static site styled with TailwindCSS 4.
+        </p>
+
+        <div class="button">
+          <p>
+            <a href="/blog/">View Blog</a>
+            <a
+              href="https://github.com/mosugi/notro-tail"
+              class="block w-full rounded border border-blue-600 px-12 py-3 text-sm font-medium text-blue-600 hover:bg-blue-600 hover:text-white focus:outline-none focus:ring sm:w-auto"
+            >
+              GitHub
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <section class="mx-auto max-w-screen-xl px-4 pb-16 sm:px-6 lg:px-8">
+      <h2 class="text-2xl font-bold text-gray-900 mb-6">Features</h2>
+      <div class="features">
+        <details open>
+          <summary><strong>Notion Content Loader</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            Astro Content Collections backed by the Notion Public API. Incremental
+            builds via <code>last_edited_time</code> cache invalidation.
+          </p>
+        </details>
+
+        <details open>
+          <summary><strong>Markdown Pipeline</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            Custom remark/rehype plugins for callouts, columns, toggles, table of
+            contents, page links, and media embeds.
+          </p>
+        </details>
+
+        <details open>
+          <summary><strong>TailwindCSS 4</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            All Notion block types and colors map to <code>nt-*</code> utility
+            classes. Fast, tree-shaken output.
+          </p>
+        </details>
+
+        <details open>
+          <summary><strong>Optimized Images</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            Custom Astro image service strips expiring Notion pre-signed S3 query
+            parameters so cached images survive across builds.
+          </p>
+        </details>
+
+        <details open>
+          <summary><strong>Paginated Blog</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            Built-in paginated blog with tag and category filtering, all driven
+            from your Notion database.
+          </p>
+        </details>
+
+        <details open>
+          <summary><strong>npm Library</strong></summary>
+          <p class="mt-2 text-sm text-gray-600">
+            The <code>notro</code> package is published to npm. Drop the loader
+            and components into any Astro project.
+          </p>
+        </details>
+      </div>
+    </section>
+  </main>
+</Layout>

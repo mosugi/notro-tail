@@ -14,10 +14,6 @@ if (httpsProxy) {
 export default defineConfig({
   site: "https://notrotail.mosugi.com",
 
-  redirects: {
-    "/": "/blog/",
-  },
-
   markdown: notroMarkdownConfig(),
 
 
