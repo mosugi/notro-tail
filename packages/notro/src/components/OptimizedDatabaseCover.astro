@@ -4,16 +4,17 @@ import type { PageObjectResponseType } from "../loader/schema.ts";
 interface Props {
   cover: PageObjectResponseType["cover"];
   alt?: string;
+  class?: string;
 }
 
-const { cover, alt } = Astro.props;
+const { cover, alt, class: className } = Astro.props;
 
 const imageUrl = cover?.type === "file" ? cover?.file.url : cover?.external?.url;
 ---
 
 {
   imageUrl ? (
-    <div class="nt-collection-cover">
+    <div class:list={["nt-collection-cover", className]}>
       <Image
         src={imageUrl}
         alt={alt ?? ""}

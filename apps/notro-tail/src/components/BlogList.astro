@@ -1,6 +1,6 @@
 ---
 import type { PageObjectResponseType } from "notro";
-import { DatabaseProperty, getPlainText, OptimizedDatabaseCover } from "notro";
+import { getPlainText, OptimizedDatabaseCover } from "notro";
 
 interface Props {
   posts: PageObjectResponseType[];
@@ -14,21 +14,42 @@ const { posts } = Astro.props;
     <ul class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {posts.map((data) => {
         const slug = getPlainText(data.properties.Slug) || data.id;
+        const title = getPlainText(data.properties.Name);
+        const description = getPlainText(data.properties.Description);
+        const date = data.properties.Date?.type === "date" ? data.properties.Date.date?.start : undefined;
+        const tags = data.properties.Tags?.type === "multi_select" ? data.properties.Tags.multi_select : [];
         return (
           <li>
             <a href={`/blog/${slug}/`} class="group block h-full">
-              <article class="nt-collection-item h-full overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-md">
+              <article class="h-full overflow-hidden rounded-lg border border-gray-200 bg-white transition hover:border-gray-300 hover:shadow-md">
                 <OptimizedDatabaseCover
                   cover={data.cover}
-                  alt={getPlainText(data.properties.Name)}
+                  alt={title}
+                  class="[&_img]:h-44 [&_img]:w-full [&_img]:object-cover"
                 />
                 <div class="p-4">
-                  <DatabaseProperty property={data.properties.Date} name="Date" />
-                  <p class="nt-collection-title mt-1 text-base font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-                    {getPlainText(data.properties.Name)}
+                  {date && (
+                    <time datetime={date} class="text-xs text-gray-400">
+                      {date}
+                    </time>
+                  )}
+                  <p class="mt-1 line-clamp-2 text-base font-semibold text-gray-900 transition-colors group-hover:text-blue-600">
+                    {title}
                   </p>
-                  <DatabaseProperty property={data.properties.Description} name="Description" />
-                  <DatabaseProperty property={data.properties.Tags} name="Tags" />
+                  {description && (
+                    <p class="mt-1 line-clamp-2 text-sm text-gray-500">
+                      {description}
+                    </p>
+                  )}
+                  {tags.length > 0 && (
+                    <div class="mt-2 flex flex-wrap gap-1">
+                      {tags.map((tag) => (
+                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </article>
             </a>
@@ -38,44 +59,3 @@ const { posts } = Astro.props;
     </ul>
   ) : null
 }
-
-<style is:global>
-  .nt-collection-item .nt-collection-cover img {
-    height: 11rem;
-    width: 100%;
-    object-fit: cover;
-  }
-
-  .nt-collection-item [data-property-name="Date"] .nt-property-date {
-    font-size: 0.75rem;
-    color: rgb(156 163 175);
-  }
-
-  .nt-collection-item [data-property-name="Description"] .nt-property-text {
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-    color: rgb(107 114 128);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .nt-collection-item [data-property-name="Tags"] {
-    margin-top: 0.5rem;
-  }
-
-  .nt-collection-item [data-property-name="Tags"] .nt-property-multi-select {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .nt-collection-item [data-property-name="Tags"] .nt-property-select {
-    border-radius: 9999px;
-    background-color: rgb(243 244 246);
-    padding: 0.125rem 0.5rem;
-    font-size: 0.75rem;
-    color: rgb(75 85 99);
-  }
-</style>

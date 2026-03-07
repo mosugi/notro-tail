@@ -115,4 +115,42 @@
   .nt-bookmark-block       { @apply text-sky-600 underline; }
   .nt-page-block           { @apply text-sky-600 underline; }
   .nt-collection_view-block a { @apply text-sky-600 underline; }
+
+  /* ============================================================
+     Prose typography for .nt-markdown-content (set:html output).
+     Direct Tailwind classes cannot be applied to dynamically
+     generated HTML, so @apply in global CSS is the correct
+     Tailwind approach for styling content we don't control.
+     ============================================================ */
+  .nt-markdown-content { @apply text-base leading-relaxed text-gray-800; }
+
+  .nt-markdown-content h1 { @apply mb-3 mt-10 text-3xl font-bold text-gray-900; }
+  .nt-markdown-content h2 { @apply mb-2 mt-8 text-2xl font-semibold text-gray-900; }
+  .nt-markdown-content h3 { @apply mb-2 mt-6 text-xl font-semibold text-gray-900; }
+  .nt-markdown-content h4 { @apply mb-1 mt-4 text-lg font-semibold text-gray-900; }
+
+  .nt-markdown-content p  { @apply mb-3 leading-7; }
+
+  .nt-markdown-content ul { @apply mb-3 list-disc pl-6; }
+  .nt-markdown-content ol { @apply mb-3 list-decimal pl-6; }
+  .nt-markdown-content li { @apply mb-1 leading-7; }
+
+  .nt-markdown-content blockquote { @apply my-4 border-l-4 border-gray-200 pl-4 italic text-gray-500; }
+
+  .nt-markdown-content pre { @apply my-4 overflow-x-auto rounded-md bg-gray-50 p-4 font-mono text-sm; }
+  .nt-markdown-content :not(pre) > code { @apply rounded bg-gray-100 px-1 py-0.5 font-mono text-sm text-gray-800; }
+
+  .nt-markdown-content hr { @apply my-8 border-gray-200; }
+
+  .nt-markdown-content a { @apply text-sky-600 underline underline-offset-2 hover:text-sky-700; }
+
+  .nt-markdown-content table  { @apply my-4 w-full border-collapse text-sm; }
+  .nt-markdown-content th     { @apply border border-gray-200 bg-gray-50 px-3 py-2 text-left font-semibold text-gray-700; }
+  .nt-markdown-content td     { @apply border border-gray-200 px-3 py-2 text-gray-700; }
+
+  .nt-markdown-content img    { @apply my-4 h-auto max-w-full rounded-md; }
+
+  .nt-markdown-content strong { @apply font-bold; }
+  .nt-markdown-content em     { @apply italic; }
+  .nt-markdown-content del    { @apply line-through; }
 }
