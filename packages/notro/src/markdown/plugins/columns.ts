@@ -53,11 +53,11 @@ export const columnsPlugin: Plugin<[], Root> = () => {
 
     visit(tree, "element", (node: Element) => {
       if (node.tagName === "columns") {
-        node.tagName = "notion-columns";
-        node.properties = {};
+        node.tagName = "div";
+        node.properties = { class: "nt-column-list" };
       } else if (node.tagName === "column") {
-        node.tagName = "notion-column";
-        node.properties = {};
+        node.tagName = "div";
+        node.properties = { class: "nt-column" };
 
         // Collect tab-indented text content inside the column for markdown parsing.
         const textParts: string[] = [];

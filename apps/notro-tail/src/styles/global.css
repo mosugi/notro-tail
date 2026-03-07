@@ -41,19 +41,24 @@
      Notion block types — generated via set:html, must be global
      ============================================================ */
 
-  notion-callout {
+  .nt-callout-block {
     @apply my-3 flex gap-3 rounded-md bg-gray-50 px-4 py-3 text-sm leading-7;
   }
 
-  notion-callout[data-color="gray_background"]   { @apply bg-neutral-100; }
-  notion-callout[data-color="brown_background"]  { @apply bg-stone-100; }
-  notion-callout[data-color="orange_background"] { @apply bg-orange-50; }
-  notion-callout[data-color="yellow_background"] { @apply bg-yellow-50; }
-  notion-callout[data-color="green_background"]  { @apply bg-green-50; }
-  notion-callout[data-color="blue_background"]   { @apply bg-sky-50; }
-  notion-callout[data-color="purple_background"] { @apply bg-purple-50; }
-  notion-callout[data-color="pink_background"]   { @apply bg-pink-50; }
-  notion-callout[data-color="red_background"]    { @apply bg-red-50; }
+  .nt-callout-block::before {
+    content: attr(data-icon);
+    flex-shrink: 0;
+  }
+
+  .nt-callout-block[data-color="gray_background"]   { @apply bg-neutral-100; }
+  .nt-callout-block[data-color="brown_background"]  { @apply bg-stone-100; }
+  .nt-callout-block[data-color="orange_background"] { @apply bg-orange-50; }
+  .nt-callout-block[data-color="yellow_background"] { @apply bg-yellow-50; }
+  .nt-callout-block[data-color="green_background"]  { @apply bg-green-50; }
+  .nt-callout-block[data-color="blue_background"]   { @apply bg-sky-50; }
+  .nt-callout-block[data-color="purple_background"] { @apply bg-purple-50; }
+  .nt-callout-block[data-color="pink_background"]   { @apply bg-pink-50; }
+  .nt-callout-block[data-color="red_background"]    { @apply bg-red-50; }
 
   .nt-quote-block {
     @apply my-3 border-l-4 border-gray-200 pl-4 italic text-gray-500;
@@ -71,11 +76,11 @@
     @apply pl-4;
   }
 
-  notion-columns {
+  .nt-column-list {
     @apply my-4 flex gap-6;
   }
 
-  notion-column {
+  .nt-column {
     @apply min-w-0 flex-1;
   }
 

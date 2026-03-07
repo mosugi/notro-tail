@@ -1,9 +1,6 @@
 ---
 import { getCollection } from "astro:content";
-import {
-  NotionMarkdownRenderer,
-  getPlainText,
-} from "notro";
+import { NotionMarkdownRenderer, getPlainText } from "notro";
 import Layout from "../../layouts/Layout.astro";
 
 export async function getStaticPaths() {
@@ -50,7 +47,7 @@ const markdown = entry.data.markdown;
         </div>
       </header>
 
-      <div class="nt-article-body">
+      <div class="nt-markdown-content">
         <NotionMarkdownRenderer markdown={markdown} />
       </div>
     </article>

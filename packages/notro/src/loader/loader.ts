@@ -106,8 +106,6 @@ export function loader({
             id: page.id,
             digest: page.last_edited_time,
             data: data,
-            // body enables entry.render() with component mapping.
-            // Astro processes it through the plugins in notroMarkdownConfig().
             body: preprocessedMarkdown,
           });
         });
