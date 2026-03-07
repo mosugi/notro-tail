@@ -1,12 +1,12 @@
 ---
 // Component mapping target for <notion-callout> custom elements in Notion markdown content.
 interface Props {
-  color?: string;
+  "data-color"?: string;
   icon?: string;
   [key: string]: unknown;
 }
 
-const { color, icon, ...rest } = Astro.props;
+const { "data-color": color, icon, ...rest } = Astro.props;
 
 const bgColor: Record<string, string> = {
   gray_background:   "bg-neutral-100",

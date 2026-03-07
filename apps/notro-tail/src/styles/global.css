@@ -41,9 +41,19 @@
      Notion block types — generated via set:html, must be global
      ============================================================ */
 
-  .nt-callout-block {
+  notion-callout {
     @apply my-3 flex gap-3 rounded-md bg-gray-50 px-4 py-3 text-sm leading-7;
   }
+
+  notion-callout[data-color="gray_background"]   { @apply bg-neutral-100; }
+  notion-callout[data-color="brown_background"]  { @apply bg-stone-100; }
+  notion-callout[data-color="orange_background"] { @apply bg-orange-50; }
+  notion-callout[data-color="yellow_background"] { @apply bg-yellow-50; }
+  notion-callout[data-color="green_background"]  { @apply bg-green-50; }
+  notion-callout[data-color="blue_background"]   { @apply bg-sky-50; }
+  notion-callout[data-color="purple_background"] { @apply bg-purple-50; }
+  notion-callout[data-color="pink_background"]   { @apply bg-pink-50; }
+  notion-callout[data-color="red_background"]    { @apply bg-red-50; }
 
   .nt-quote-block {
     @apply my-3 border-l-4 border-gray-200 pl-4 italic text-gray-500;
@@ -61,11 +71,11 @@
     @apply pl-4;
   }
 
-  .nt-column-list {
+  notion-columns {
     @apply my-4 flex gap-6;
   }
 
-  .nt-column {
+  notion-column {
     @apply min-w-0 flex-1;
   }
 

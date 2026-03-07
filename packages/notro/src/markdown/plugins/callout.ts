@@ -26,12 +26,14 @@ export const calloutPlugin: Plugin<[], Root> = () => {
 
       const normalizedColor = color ? normalizeColor(color) : "";
 
-      // Convert to <notion-callout> custom element for Astro component mapping
+      // Convert to <notion-callout> custom element for Astro component mapping.
+      // Use "data-color" (not "color") so colorPlugin doesn't convert it to
+      // an inline nt-color-* class, which would clobber the callout's px-4.
       node.data = {
         ...node.data,
         hName: "notion-callout",
         hProperties: {
-          color: normalizedColor || undefined,
+          "data-color": normalizedColor || undefined,
           icon: icon || undefined,
         },
       };
