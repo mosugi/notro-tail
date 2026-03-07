@@ -40,24 +40,33 @@ async function parseColumnContent(rawText: string): Promise<RootContent[]> {
   return parsed.children as RootContent[];
 }
 
+type ColumnsOptions = {
+  /** Extra CSS classes appended after "nt-column-list" on the columns wrapper div. */
+  columnList?: string;
+  /** Extra CSS classes appended after "nt-column" on each column div. */
+  column?: string;
+};
+
 // Transforms layout-related HTML tags in hast:
-// - <columns><column> → <notion-columns><notion-column>
+// - <columns>  → <div class="nt-column-list">
+// - <column>   → <div class="nt-column">
 // - <table fit-page-width> → <table class="nt-table-full-width"> (attribute removed)
 //
 // Also parses the tab-indented markdown content inside <column> elements,
 // since Notion's Enhanced Markdown uses raw HTML for column layouts and the
 // inner content is tab-indented text that remark does not parse as markdown.
-export const columnsPlugin: Plugin<[], Root> = () => {
+export const columnsPlugin: Plugin<[ColumnsOptions?], Root> = (options = {}) => {
+  const { columnList: extraColumnList, column: extraColumn } = options;
   return async (tree) => {
     const tasks: Array<() => Promise<void>> = [];
 
     visit(tree, "element", (node: Element) => {
       if (node.tagName === "columns") {
         node.tagName = "div";
-        node.properties = { class: "nt-column-list" };
+        node.properties = { class: ["nt-column-list", extraColumnList].filter(Boolean).join(" ") };
       } else if (node.tagName === "column") {
         node.tagName = "div";
-        node.properties = { class: "nt-column" };
+        node.properties = { class: ["nt-column", extraColumn].filter(Boolean).join(" ") };
 
         // Collect tab-indented text content inside the column for markdown parsing.
         const textParts: string[] = [];

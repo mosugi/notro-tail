@@ -36,22 +36,28 @@ async function parseToggleContent(rawText: string): Promise<RootContent[]> {
   return parsed.children as RootContent[];
 }
 
+type ToggleOptions = {
+  /** Extra CSS classes appended after "nt-toggle-block" on the details element. */
+  extraClass?: string;
+};
+
 // Processes Notion toggle blocks (<details>/<summary>):
 // 1. Adds the nt-toggle-block CSS class.
 // 2. Parses tab-indented markdown content inside the toggle into proper HTML.
 //    Notion's Enhanced Markdown uses raw HTML <details>/<summary> elements,
 //    with the inner content as tab-indented text (not parsed as markdown).
 //    This plugin re-parses that content so bullets, bold, etc. render correctly.
-export const togglePlugin: Plugin<[], Root> = () => {
+export const togglePlugin: Plugin<[ToggleOptions?], Root> = (options = {}) => {
+  const { extraClass } = options;
   return async (tree) => {
     const tasks: Array<() => Promise<void>> = [];
 
     visit(tree, "element", (node: Element) => {
       if (node.tagName !== "details") return;
 
-      // Add nt-toggle-block class
+      // Add nt-toggle-block class (plus any extra classes from config)
       const existing = node.properties?.class ?? "";
-      const classes = [existing, "nt-toggle-block"].filter(Boolean).join(" ");
+      const classes = [existing, "nt-toggle-block", extraClass].filter(Boolean).join(" ");
       node.properties = { ...node.properties, class: classes };
 
       // Collect text nodes that come after the <summary> element.
