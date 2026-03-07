@@ -12,6 +12,7 @@ import {
   type PageWithMarkdownType,
   pageWithMarkdownSchema,
 } from "./schema.ts";
+import { preprocessNotionMarkdown } from "../markdown/transformer.ts";
 
 type LoaderOptions = {
   queryParameters: QueryDataSourceParameters;
@@ -73,6 +74,13 @@ export function loader({
             logger.warn(`Page ${page.id} markdown was truncated`);
           }
 
+          // Preprocess the markdown to fix Notion-specific syntax issues before
+          // storing. This ensures both entry.render() (via notroMarkdownConfig)
+          // and NotionMarkdownRenderer see corrected markdown.
+          const preprocessedMarkdown = preprocessNotionMarkdown(
+            markdownResponse.markdown
+          );
+
           const data = await parseData<PageWithMarkdownType>({
             id: page.id,
             data: {
@@ -90,7 +98,7 @@ export function loader({
               in_trash: page.in_trash,
               url: page.url,
               public_url: page.public_url,
-              markdown: markdownResponse.markdown,
+              markdown: preprocessedMarkdown,
             } as PageWithMarkdownType,
           });
 
@@ -100,7 +108,7 @@ export function loader({
             data: data,
             // body enables entry.render() with component mapping.
             // Astro processes it through the plugins in notroMarkdownConfig().
-            body: markdownResponse.markdown,
+            body: preprocessedMarkdown,
           });
         });
 
