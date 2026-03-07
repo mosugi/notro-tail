@@ -9,6 +9,9 @@ export { default as NotionH2 } from "./src/components/notion/NotionH2.astro";
 export { default as NotionH3 } from "./src/components/notion/NotionH3.astro";
 export { default as NotionBlockquote } from "./src/components/notion/NotionBlockquote.astro";
 export { default as NotionTable } from "./src/components/notion/NotionTable.astro";
+export { default as NotionCallout } from "./src/components/notion/NotionCallout.astro";
+export { default as NotionColumns } from "./src/components/notion/NotionColumns.astro";
+export { default as NotionColumn } from "./src/components/notion/NotionColumn.astro";
 
 export * from "./src/utils/notion";
 export * from "./src/loader/loader";

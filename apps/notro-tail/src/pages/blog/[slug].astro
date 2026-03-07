@@ -1,7 +1,15 @@
 ---
 import { getCollection } from "astro:content";
 import {
-  NotionMarkdownRenderer,
+  NotionImage,
+  NotionH1,
+  NotionH2,
+  NotionH3,
+  NotionBlockquote,
+  NotionTable,
+  NotionCallout,
+  NotionColumns,
+  NotionColumn,
   getPlainText,
 } from "notro";
 import Layout from "../../layouts/Layout.astro";
@@ -20,7 +28,8 @@ const title = getPlainText(entry.data.properties.Name) ?? entry.id;
 const description = getPlainText(entry.data.properties.Description);
 const date = entry.data.properties.Date.date?.start;
 const tags = entry.data.properties.Tags.multi_select;
-const markdown = entry.data.markdown;
+
+const { Content } = await entry.render();
 ---
 
 <Layout title={title}>
@@ -50,8 +59,20 @@ const markdown = entry.data.markdown;
         </div>
       </header>
 
-      <div class="nt-article-body">
-        <NotionMarkdownRenderer markdown={markdown} />
+      <div class="nt-markdown-content">
+        <Content
+          components={{
+            img: NotionImage,
+            h1: NotionH1,
+            h2: NotionH2,
+            h3: NotionH3,
+            blockquote: NotionBlockquote,
+            table: NotionTable,
+            "notion-callout": NotionCallout,
+            "notion-columns": NotionColumns,
+            "notion-column": NotionColumn,
+          }}
+        />
       </div>
     </article>
   </main>

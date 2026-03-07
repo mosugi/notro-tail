@@ -10,7 +10,7 @@ function normalizeColor(color: string): string {
 }
 
 // Transforms :::callout{icon="💡" color="gray_bg"} container directives
-// into HTML div elements before remark-rehype runs.
+// into <notion-callout> custom elements before remark-rehype runs.
 //
 // Note: Notion's API outputs "::: callout {icon=...}" with spaces.
 // The preprocessNotionMarkdown() function in transformer.ts normalizes
@@ -25,16 +25,14 @@ export const calloutPlugin: Plugin<[], Root> = () => {
       const icon = attrs.icon ?? "";
 
       const normalizedColor = color ? normalizeColor(color) : "";
-      const colorClass = normalizedColor ? ` nt-color-${normalizedColor}` : "";
-      const classes = `nt-callout-block${colorClass}`;
 
-      // Convert to HTML using hast-compatible data
+      // Convert to <notion-callout> custom element for Astro component mapping
       node.data = {
         ...node.data,
-        hName: "div",
+        hName: "notion-callout",
         hProperties: {
-          class: classes,
-          "data-callout-icon": icon || undefined,
+          color: normalizedColor || undefined,
+          icon: icon || undefined,
         },
       };
     });

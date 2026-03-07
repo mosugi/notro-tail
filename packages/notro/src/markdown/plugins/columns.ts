@@ -41,7 +41,7 @@ async function parseColumnContent(rawText: string): Promise<RootContent[]> {
 }
 
 // Transforms layout-related HTML tags in hast:
-// - <columns><column> → <div class="nt-column-list"><div class="nt-column">
+// - <columns><column> → <notion-columns><notion-column>
 // - <table fit-page-width> → <table class="nt-table-full-width"> (attribute removed)
 //
 // Also parses the tab-indented markdown content inside <column> elements,
@@ -53,11 +53,11 @@ export const columnsPlugin: Plugin<[], Root> = () => {
 
     visit(tree, "element", (node: Element) => {
       if (node.tagName === "columns") {
-        node.tagName = "div";
-        node.properties = { ...node.properties, class: "nt-column-list" };
+        node.tagName = "notion-columns";
+        node.properties = {};
       } else if (node.tagName === "column") {
-        node.tagName = "div";
-        node.properties = { ...node.properties, class: "nt-column" };
+        node.tagName = "notion-column";
+        node.properties = {};
 
         // Collect tab-indented text content inside the column for markdown parsing.
         const textParts: string[] = [];
