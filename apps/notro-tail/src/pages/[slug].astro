@@ -1,0 +1,38 @@
+---
+import { getCollection } from "astro:content";
+import { NotionMarkdownRenderer, getPlainText } from "notro";
+import Layout from "../layouts/Layout.astro";
+
+export async function getStaticPaths() {
+  const pages = await getCollection("pages");
+  return pages.map((entry) => ({
+    params: { slug: getPlainText(entry.data.properties.Slug) || entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+
+const title = getPlainText(entry.data.properties.Name) ?? entry.id;
+const description = entry.data.properties.Description
+  ? getPlainText(entry.data.properties.Description)
+  : undefined;
+const markdown = entry.data.markdown;
+---
+
+<Layout title={title}>
+  <main class="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8">
+    <article class="mx-auto max-w-3xl">
+      <header class="mb-8 border-b border-gray-100 pb-6">
+        <h1 class="mb-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          {title}
+        </h1>
+        {description && <p class="mb-4 text-lg text-gray-500">{description}</p>}
+      </header>
+
+      <div class="nt-markdown-content">
+        <NotionMarkdownRenderer markdown={markdown} />
+      </div>
+    </article>
+  </main>
+</Layout>

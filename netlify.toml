@@ -1,3 +1,6 @@
 [template.environment]
   NOTION_TOKEN = "Your Notion Integration Token"
-  NOTION_DATASOURCE_ID = "Your Notion Data Source ID (posts collection)"
+  # Single Notion database used for both posts and pages.
+  # Posts: entries where Type property is "post" or unset.
+  # Pages: entries where Type property is "page".
+  NOTION_DATASOURCE_ID = "Your Notion Data Source ID"
