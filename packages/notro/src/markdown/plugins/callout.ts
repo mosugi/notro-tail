@@ -9,19 +9,13 @@ function normalizeColor(color: string): string {
   return color.endsWith("_bg") ? color.slice(0, -3) + "_background" : color;
 }
 
-type CalloutOptions = {
-  /** Extra CSS classes appended after "nt-callout-block" on the wrapper div. */
-  extraClass?: string;
-};
-
 // Transforms :::callout{icon="💡" color="gray_bg"} container directives
 // into <div class="nt-callout-block"> elements before remark-rehype runs.
 //
 // Note: Notion's API outputs "::: callout {icon=...}" with spaces.
 // The preprocessNotionMarkdown() function in transformer.ts normalizes
 // this to ":::callout{...}" before remark parsing.
-export const calloutPlugin: Plugin<[CalloutOptions?], Root> = (options = {}) => {
-  const { extraClass } = options;
+export const calloutPlugin: Plugin<[], Root> = () => {
   return (tree) => {
     visit(tree, "containerDirective", (node: ContainerDirective) => {
       if (node.name !== "callout") return;
@@ -31,7 +25,6 @@ export const calloutPlugin: Plugin<[CalloutOptions?], Root> = (options = {}) => 
       const icon = attrs.icon ?? "";
 
       const normalizedColor = color ? normalizeColor(color) : "";
-      const cls = ["nt-callout-block", extraClass].filter(Boolean).join(" ");
 
       // Use "data-color" so colorPlugin doesn't touch it (avoids inline
       // nt-color-* px-0.5 clobbering the callout's px-4).
@@ -40,7 +33,7 @@ export const calloutPlugin: Plugin<[CalloutOptions?], Root> = (options = {}) => 
         ...node.data,
         hName: "div",
         hProperties: {
-          class: cls,
+          class: "nt-callout-block",
           "data-color": normalizedColor || undefined,
           "data-icon": icon || undefined,
         },
