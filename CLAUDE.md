@@ -1,5 +1,9 @@
 # notro-tail
 
+## 言語設定
+
+すべての返答は日本語で行うこと。ただし、コードのコメントは英語を使用する。
+
 ## Project Overview
 
 **NotroTail** is a Notion-to-Astro static site generator. It fetches content from Notion via the Notion Public API (Markdown Content API), renders it through a custom remark/rehype pipeline, and outputs a fast, SEO-optimized static site styled with TailwindCSS 4.
