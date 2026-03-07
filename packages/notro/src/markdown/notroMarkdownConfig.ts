@@ -1,6 +1,8 @@
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import remarkDirective from "remark-directive";
 import rehypeRaw from "rehype-raw";
+import rehypeKatex from "rehype-katex";
 import { calloutPlugin } from "./plugins/callout.ts";
 import { columnsPlugin } from "./plugins/columns.ts";
 import { colorPlugin } from "./plugins/color.ts";
@@ -15,57 +17,25 @@ import { preprocessNotionMarkdown } from "./transformer.ts";
 import type { LinkToPages } from "./transformer.ts";
 
 type NotroMarkdownConfigOptions = {
-  // Mapping from Notion page IDs to internal site URLs.
-  // When provided, <page url="..."> tags in Notion markdown are resolved to
-  // internal paths. Without this, page links fall back to external Notion URLs.
   linkToPages?: LinkToPages;
 };
 
-// A remark plugin that preprocesses the raw Notion markdown source before
-// remark-parse runs. This is needed because Astro's markdown pipeline calls
-// remark-parse before any plugins, so structural fixes (like --- dividers and
-// callout syntax) must be applied to the raw string via this special approach.
-//
-// The plugin uses a "compiler" hook to mutate the VFile value (the source string)
-// before the AST is built, by wrapping it with a text transformation.
-//
-// Actually, since Astro runs remarkParse before plugins, we inject a plugin
-// that transforms the parsed tree to fix setext heading artifacts.
-function remarkPreprocessNotionPlugin() {
-  return (_tree: unknown, file: { value: string }) => {
-    // This runs after parsing — we cannot fix setext headings post-parse here.
-    // Instead, we use the "attacher" phase: the actual preprocessing is done
-    // by storing the modified source in the VFile before remark-parse runs.
-    // This plugin exists as a marker; actual preprocessing happens in the loader.
-    void file;
-  };
-}
-// Note: For Astro Content Collections (entry.render() path), preprocessing
-// happens in the loader before markdown is stored. See loader.ts.
-// For the standalone transformer path, preprocessing happens in transformer.ts.
-
 // Returns the remark and rehype plugin configuration to spread into the
-// `markdown` key of astro.config.mjs. This enables full Notion-extended
-// Markdown support when using entry.render() with Content Collections.
+// `markdown` key of astro.config.mjs. Enables full Notion-extended Markdown
+// support when using entry.render() with Content Collections.
 //
-// Usage in astro.config.mjs:
-//   import { notroMarkdownConfig } from "notro";
-//   export default defineConfig({
-//     markdown: notroMarkdownConfig(),
-//   });
-//
-// Note: <page> links are resolved to external Notion URLs unless linkToPages
-// is populated. For internal link resolution, use NotionMarkdownRenderer
-// (which applies linkToPages at render time).
+// Note: Preprocessing (setext heading fix, callout syntax, etc.) is applied
+// in the loader before markdown is stored. See loader.ts.
 export function notroMarkdownConfig(options: NotroMarkdownConfigOptions = {}) {
   const { linkToPages = {} } = options;
 
   return {
-    remarkPlugins: [remarkGfm, remarkDirective, calloutPlugin],
+    remarkPlugins: [remarkGfm, remarkMath, remarkDirective, calloutPlugin],
     rehypePlugins: [
-      // rehypeRaw must be first to parse raw HTML tags from Notion markdown
-      // into proper hast nodes before other plugins process them.
+      // rehypeRaw must be first to parse raw HTML tags from Notion markdown.
       rehypeRaw,
+      // rehypeKatex renders math nodes produced by remark-math.
+      rehypeKatex,
       imagePlugin,
       columnsPlugin,
       colorPlugin,

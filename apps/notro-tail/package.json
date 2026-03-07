@@ -17,6 +17,8 @@
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^5.18.0",
     "notro": "^0.0.1",
+    "rehype-katex": "^7.0.1",
+    "remark-math": "^6.0.0",
     "tailwindcss": "^4.2.1",
     "typescript": "^5.9.3"
   }
