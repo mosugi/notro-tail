@@ -36,14 +36,39 @@ const data = page.data.map(({ data }) => data as PageObjectResponseType);
 ---
 
 <Layout title={`タグ: ${tag}`}>
-  <main class="nt-posts">
-    <section class="nt-selectable nt-collection_view-block">
-      <BlogList posts={data} />
-    </section>
-    <nav class="nt-pagination">
-      {page.url.prev && <a href={page.url.prev}>← 前へ</a>}
-      <span>{page.currentPage} / {page.lastPage}</span>
-      {page.url.next && <a href={page.url.next}>次へ →</a>}
-    </nav>
+  <main class="mx-auto max-w-screen-xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">タグ: {tag}</h1>
+    </div>
+    <BlogList posts={data} />
+    {
+      page.lastPage > 1 && (
+        <nav class="mt-10 flex items-center justify-center gap-4 text-sm">
+          {page.url.prev ? (
+            <a
+              href={page.url.prev}
+              class="rounded-md border border-gray-200 px-4 py-2 text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+            >
+              ← 前へ
+            </a>
+          ) : (
+            <span class="px-4 py-2 text-gray-300">← 前へ</span>
+          )}
+          <span class="text-gray-500">
+            {page.currentPage} / {page.lastPage}
+          </span>
+          {page.url.next ? (
+            <a
+              href={page.url.next}
+              class="rounded-md border border-gray-200 px-4 py-2 text-gray-600 transition hover:border-gray-300 hover:bg-gray-50"
+            >
+              次へ →
+            </a>
+          ) : (
+            <span class="px-4 py-2 text-gray-300">次へ →</span>
+          )}
+        </nav>
+      )
+    }
   </main>
 </Layout>
