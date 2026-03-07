@@ -43,7 +43,7 @@
     "provenance": true
   },
   "dependencies": {
-    "@notionhq/client": "5.11.0",
+    "@notionhq/client": "5.11.1",
     "unified": "^11.0.0",
     "remark-parse": "^11.0.0",
     "remark-directive": "^4.0.0",
