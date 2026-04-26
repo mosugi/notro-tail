@@ -38,11 +38,14 @@ import H3              from './H3.astro';
 import H4              from './H4.astro';
 import StyledSpan      from './StyledSpan.astro';
 import ImageBlock      from './ImageBlock.astro';
-import TableBlock      from './TableBlock.astro';
-import TableColgroup   from './TableColgroup.astro';
-import TableCol        from './TableCol.astro';
-import TableRow        from './TableRow.astro';
-import TableCell       from './TableCell.astro';
+import TableBlock       from './TableBlock.astro';
+import TableHead        from './TableHead.astro';
+import TableBody        from './TableBody.astro';
+import TableColgroup    from './TableColgroup.astro';
+import TableCol         from './TableCol.astro';
+import TableRow         from './TableRow.astro';
+import TableHeaderCell  from './TableHeaderCell.astro';
+import TableCell        from './TableCell.astro';
 
 export const notroComponents = {
   // ── Notion block elements (PascalCase) ────────────────────────────────
@@ -70,7 +73,22 @@ export const notroComponents = {
   MentionAgent:         Mention,
   MentionDate:          MentionDate,
 
+  // ── Notion raw HTML table elements (PascalCase — renamed by rehypeBlockElementsPlugin) ──
+  // These keys handle Notion's raw HTML tables (<table header-row="true">...).
+  // rehypeBlockElementsPlugin renames the mdxJsxFlowElement nodes to PascalCase,
+  // so only PascalCase keys are consulted for Notion raw HTML content.
+  TableBlock:       TableBlock,
+  TableHead:        TableHead,
+  TableBody:        TableBody,
+  TableColgroup:    TableColgroup,
+  TableCol:         TableCol,
+  TableRow:         TableRow,
+  TableHeaderCell:  TableHeaderCell,
+  TableCell:        TableCell,
+
   // ── HTML element overrides ─────────────────────────────────────────────
+  // These lowercase keys handle HTML elements generated from markdown syntax
+  // (e.g. GFM pipe tables produce <table>, <thead>, <tbody>, <tr>, <th>, <td>).
   h1: H1,
   h2: H2,
   h3: H3,
@@ -79,13 +97,13 @@ export const notroComponents = {
   span:       StyledSpan,
   img:        ImageBlock,
   table:      TableBlock,
-  colgroup:   TableColgroup,
-  col:        TableCol,
+  thead:      TableHead,
+  tbody:      TableBody,
   tr:         TableRow,
+  th:         TableHeaderCell,
   td:         TableCell,
 
   // ── Standard HTML elements ─────────────────────────────────────────────
-  th:     makeHtmlElement('th',     'px-3 py-2 text-left text-sm font-semibold'),
   p:      ColoredParagraph,
   ul:     makeHtmlElement('ul',     'mb-4 list-disc pl-6 space-y-1'),
   ol:     makeHtmlElement('ol',     'mb-4 list-decimal pl-6 space-y-1'),

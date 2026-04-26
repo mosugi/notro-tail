@@ -46,7 +46,24 @@ export const defaultComponents = {
   MentionAgent:           makeHtmlElement("span"),
   MentionDate:            makeHtmlElement("time"),
 
+  // ── Table elements (renamed from lowercase by rehypeBlockElementsPlugin) ───
+  // Notion outputs raw <table header-row="true">...</table> HTML blocks.
+  // rehypeBlockElementsPlugin renames these to PascalCase so the `components`
+  // prop can substitute them. Default: pass-through as plain HTML elements.
+  TableBlock:        makeHtmlElement("table"),
+  TableHead:         makeHtmlElement("thead"),
+  TableBody:         makeHtmlElement("tbody"),
+  TableColgroup:     makeHtmlElement("colgroup"),
+  TableCol:          makeHtmlElement("col"),
+  TableRow:          makeHtmlElement("tr"),
+  TableHeaderCell:   makeHtmlElement("th"),
+  TableCell:         makeHtmlElement("td"),
+
   // ── Standard HTML element pass-throughs ──────────────────────────────────
+  // These lowercase keys override HTML elements generated from markdown syntax
+  // (e.g. GFM tables: <thead>, <tbody>, <tr>, <th>, <td>). They are separate
+  // from the PascalCase entries above, which handle Notion raw HTML elements
+  // renamed by rehypeBlockElementsPlugin.
   span:   makeHtmlElement("span"),
   p:      makeHtmlElement("p"),
   ul:     makeHtmlElement("ul"),
@@ -54,7 +71,11 @@ export const defaultComponents = {
   li:     makeHtmlElement("li"),
   pre:    makeHtmlElement("pre"),
   hr:     makeHtmlElement("hr"),
+  thead:  makeHtmlElement("thead"),
+  tbody:  makeHtmlElement("tbody"),
+  tr:     makeHtmlElement("tr"),
   th:     makeHtmlElement("th"),
+  td:     makeHtmlElement("td"),
   a:      makeHtmlElement("a"),
   strong: makeHtmlElement("strong"),
   em:     makeHtmlElement("em"),

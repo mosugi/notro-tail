@@ -226,6 +226,16 @@ const NOTION_BLOCK_RENAMES = new Map<string, string>([
 	['details',                 'Details'],
 	['summary',                 'Summary'],
 	['empty-block',             'EmptyBlock'],
+	// Table elements — Notion outputs raw <table header-row="true">...</table> HTML.
+	// Renaming to PascalCase enables the `components` prop to override them.
+	['table',                   'TableBlock'],
+	['thead',                   'TableHead'],
+	['tbody',                   'TableBody'],
+	['colgroup',                'TableColgroup'],
+	['col',                     'TableCol'],
+	['tr',                      'TableRow'],
+	['th',                      'TableHeaderCell'],
+	['td',                      'TableCell'],
 ]);
 
 /**

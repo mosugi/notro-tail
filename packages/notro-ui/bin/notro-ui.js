@@ -77,7 +77,7 @@ const COMPONENT_MAP = {
   quote:            ['Quote.astro'],
   styledspan:       ['StyledSpan.astro'],
   image:            ['ImageBlock.astro'],
-  table:            ['TableBlock.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableCell.astro'],
+  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro'],
   coloredparagraph: ['ColoredParagraph.astro'],
   syncedblock:      ['SyncedBlock.astro'],
 };

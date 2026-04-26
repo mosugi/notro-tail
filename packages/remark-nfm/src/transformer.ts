@@ -53,9 +53,9 @@
  *
  * 9. Markdown links inside raw HTML table cells:
  *    Notion exports table cell rich-text links as markdown link syntax
- *    [text](url) inside raw HTML <td> blocks. remark does not process inline
- *    markdown inside raw HTML, so these appear as literal text. We convert
- *    them to <a href="url">text</a> before the pipeline runs.
+ *    [text](url) inside raw HTML <td> and <th> blocks. remark does not process
+ *    inline markdown inside raw HTML, so these appear as literal text. We
+ *    convert them to <a href="url">text</a> before the pipeline runs.
  *
  * 10. Tab-indented content inside <details> and <column> blocks:
  *    Notion API outputs content inside <details> and <column> elements with a
@@ -370,20 +370,21 @@ export function preprocessNotionMarkdown(markdown: string): string {
   );
   result = result.replace(blockClosingPattern, "$1\n\n$3");
 
-  // Fix 9: Convert markdown link syntax inside raw HTML <td> cells to <a> tags.
-  // Notion exports table cell links as [text](url) inside <td>...</td>, but remark
-  // does not process inline markdown inside raw HTML blocks. Replace them with
-  // proper anchor elements so they render as clickable links.
+  // Fix 9: Convert markdown link syntax inside raw HTML table cells to <a> tags.
+  // Notion exports table cell links as [text](url) inside <td>...</td> and
+  // <th>...</th>, but remark does not process inline markdown inside raw HTML
+  // blocks. Replace them with proper anchor elements so they render as links.
   // The URL pattern handles one level of nested parentheses, e.g.:
   //   https://en.wikipedia.org/wiki/Rust_(programming_language)
   //   https://developer.mozilla.org/docs/Array/find()
-  result = result.replace(/<td>([\s\S]*?)<\/td>/g, (_, content: string) => {
+  const convertLinksInCell = (_: string, tag: string, content: string): string => {
     const linked = content.replace(
       /\[([^\]\n]+)\]\(([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)\)/g,
       '<a href="$2">$1</a>'
     );
-    return `<td>${linked}</td>`;
-  });
+    return `<${tag}>${linked}</${tag}>`;
+  };
+  result = result.replace(/<(td|th)>([\s\S]*?)<\/\1>/g, convertLinksInCell);
 
   // Fix 10: Dedent tab-indented content inside <details>, <columns>, and <column> blocks.
   // Notion API outputs each content line inside <details> and <column> elements
