@@ -1,7 +1,7 @@
 {
   "name": "notro-loader",
   "description": "A Content loader for Astro that uses the Notion Public API",
-  "version": "0.0.11",
+  "version": "0.1.0",
   "type": "module",
   "author": "mosugi <mosugeek@gmail.com>",
   "license": "MIT",
