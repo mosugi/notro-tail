@@ -59,6 +59,19 @@ const NOTION_CUSTOM_ELEMENTS = [
 	'mention-data-source',
 	'mention-agent',
 	'mention-date',
+
+	// Table elements — Notion outputs raw <table header-row="true">...</table>.
+	// These are valid HTML so rehype-raw processes them as `element` nodes,
+	// losing the mdxJsxFlowElement type that enables component substitution.
+	// passThrough preserves them so rehypeBlockElementsPlugin can rename them.
+	'table',
+	'thead',
+	'tbody',
+	'tr',
+	'th',
+	'td',
+	'colgroup',
+	'col',
 ];
 
 // ── Notion color attribute → CSS class conversion ─────────────────────────
@@ -260,9 +273,31 @@ const rehypeBlockElementsPlugin: Plugin<[], Root> = () => {
 			// Block elements appear as mdxJsxFlowElement at the top level,
 			// but may appear as mdxJsxTextElement when consecutive blocks appear
 			// without blank lines in the Notion markdown (grouped into a <p>).
-			if (node.type !== 'mdxJsxFlowElement' && node.type !== 'mdxJsxTextElement') return;
-			const renamed = NOTION_BLOCK_RENAMES.get(node.name);
-			if (renamed) node.name = renamed;
+			if (node.type === 'mdxJsxFlowElement' || node.type === 'mdxJsxTextElement') {
+				const renamed = NOTION_BLOCK_RENAMES.get(node.name);
+				if (renamed) node.name = renamed;
+				return;
+			}
+			// Standard HTML elements (e.g. <table>, <tr>, <td>) processed by rehype-raw
+			// arrive as `element` nodes. MDX does not apply component substitution to
+			// `element` nodes, so we convert them to mdxJsxFlowElement here.
+			// Attributes on `element` nodes live in `properties` (hast format);
+			// we convert them to `attributes` (MDX JSX format).
+			if (node.type === 'element' && NOTION_BLOCK_RENAMES.has(node.tagName)) {
+				const renamed = NOTION_BLOCK_RENAMES.get(node.tagName)!;
+				const properties = node.properties ?? {};
+				// Convert hast properties to MDX JSX attributes array.
+				const attributes = Object.entries(properties).map(([name, value]) => ({
+					type: 'mdxJsxAttribute' as const,
+					name,
+					value: value === true ? null : String(value ?? ''),
+				}));
+				node.type = 'mdxJsxFlowElement';
+				node.name = renamed;
+				node.attributes = attributes;
+				delete node.tagName;
+				delete node.properties;
+			}
 		});
 	};
 };
