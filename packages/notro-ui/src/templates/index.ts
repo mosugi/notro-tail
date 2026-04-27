@@ -87,7 +87,7 @@ export const notroComponents = {
   ul:     makeHtmlElement('ul',     'mb-4 list-disc pl-6 space-y-1'),
   ol:     makeHtmlElement('ol',     'mb-4 list-decimal pl-6 space-y-1'),
   li:     makeHtmlElement('li',     'leading-7'),
-  pre:    makeHtmlElement('pre'),   // visual style handled by .notro-markdown pre in theme.css
+  pre:    makeHtmlElement('pre'),   // visual style handled by .notro-markdown pre in global.css
   hr:     makeHtmlElement('hr',     'my-8 border-t border-[var(--notro-border)]'),
   a:      makeHtmlElement('a',      'underline underline-offset-2 hover:opacity-70'),
   strong: makeHtmlElement('strong', 'font-semibold'),

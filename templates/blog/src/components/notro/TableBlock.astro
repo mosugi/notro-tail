@@ -1,10 +1,11 @@
 ---
 /**
  * Notion table block.
- * `.notro-table-wrapper` and `.notro-table` selectors are styled in notro-theme.css.
+ * Border styles requiring parent context (.notro-table-wrapper > .notro-table) are in TableBlock.css.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv } from 'tailwind-variants';
+import './TableBlock.css';
 
 export const tableWrapper = tv({
   base: 'notro-table-wrapper my-4 overflow-x-auto',

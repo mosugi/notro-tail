@@ -15,7 +15,8 @@
 - Use **TailwindCSS 4 utility classes only** for all styling
 - Do not use inline styles (`style="..."` attributes)
 - Do not use `<style>` tags inside Astro components
-- Notion block styling is handled by **notro-ui components + `notro-theme.css`** — do not add Notion block styles to `global.css`
+- Notion block component styles live in **component-owned CSS files** (e.g. `Toggle.css`, `TableBlock.css`) that are imported in each component's frontmatter — do not add component-specific styles to `global.css`
+- Design tokens (`--notro-*` variables), color utilities (`notro-text-*`, `notro-bg-*`), and markdown/mermaid wrapper styles (`.notro-markdown`) are defined in `global.css`
 - `nt-*` classes in `global.css` are page layout design tokens (`nt-text-*`, `nt-bg-*`, `nt-border-*`) and are separate from Notion block styles
 - Do not manipulate styles directly via `element.style.*` in client-side `<script>` tags
 - Control visibility using **class manipulation** such as `element.classList.toggle("hidden")` — do not use `element.style.display`
@@ -53,7 +54,7 @@ notro-ui update --all --yes
 
 | Command | Behavior |
 |---------|----------|
-| `notro-ui init` | Generates `notro.json`, places `notro-theme.css` |
+| `notro-ui init` | Generates `notro.json` |
 | `notro-ui add [name...] [--all]` | Adds components (**skips existing files**) |
 | `notro-ui update [name...] [--all] [--yes]` | Updates components (**overwrites local changes**) |
 | `notro-ui remove [name...] [--all]` | Removes components |
@@ -250,8 +251,7 @@ notro/
 │   │   │   │       ├── [slug].astro         # Individual blog posts
 │   │   │   │       └── tag/[tag]/[...page].astro
 │   │   │   ├── styles/
-│   │   │   │   ├── global.css       # TailwindCSS 4 imports + nt-* page layout utilities
-│   │   │   │   └── notro-theme.css  # Notion block colors, toggle, table, TOC styles
+│   │   │   │   └── global.css       # TailwindCSS 4 imports + notro design tokens + nt-* utilities
 │   │   │   ├── content.config.ts  # Astro Content Collections (posts)
 │   │   │   └── env.d.ts
 │   │   ├── src/config.ts        # site name, navigation links
@@ -262,7 +262,7 @@ notro/
 │       ├── src/
 │       │   ├── layouts/     # Layout.astro (simple HTML shell)
 │       │   ├── pages/       # index.astro + [slug].astro
-│       │   ├── styles/      # global.css + notro-theme.css
+│       │   ├── styles/      # global.css
 │       │   └── content.config.ts
 │       ├── astro.config.mjs
 │       ├── package.json
@@ -472,11 +472,10 @@ Two distinct class prefixes are used in this project:
 - Background opacity scale: `.nt-bg-04`, `.nt-bg-09`, etc.
 - Border opacity scale: `.nt-border`, `.nt-border-07`, etc.
 
-**`notro-*` classes** (defined in `notro-theme.css`) — Notion block styles managed by notro-ui:
-- Colors: `.notro-text-gray`, `.notro-text-blue`, `.notro-bg-gray`, `.notro-bg-blue`, etc.
-- Component classes: `.notro-toggle`, `.notro-table`, `.notro-table-wrapper`, `.notro-mermaid`, etc.
-- TOC: `.notro-toc-list`, `.notro-toc-item`, `.notro-toc-level-1` — `.notro-toc-level-4`
-- Markdown wrapper: `.notro-markdown` (applied by `NotroContent`, scopes pre/code/task-list styles)
+**`notro-*` classes** — Notion block styles managed by notro-ui:
+- Colors: `.notro-text-gray`, `.notro-text-blue`, `.notro-bg-gray`, `.notro-bg-blue`, etc. — defined in `global.css`
+- Component classes: `.notro-toggle` (Toggle.css), `.notro-table` / `.notro-table-wrapper` (TableBlock.css), `.notro-toc-*` (TableOfContents.css) — defined in component-owned CSS files
+- Markdown wrapper: `.notro-markdown` (applied by `NotroContent`, scopes pre/code/task-list/mermaid styles) — defined in `global.css`
 
 ---
 

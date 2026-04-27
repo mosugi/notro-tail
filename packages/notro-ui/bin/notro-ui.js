@@ -3,7 +3,7 @@
  * notro-ui CLI
  *
  * Usage:
- *   notro-ui init                              Initialize project (creates notro.json, copies theme.css)
+ *   notro-ui init                              Initialize project (creates notro.json)
  *   notro-ui add [components...] [--all] [-y]  Add components (skips existing files)
  *   notro-ui update [components...] [--all] [-y]  Update components (overwrites local changes)
  *   notro-ui remove [components...] [--all]    Remove components
@@ -59,7 +59,7 @@ const cyan   = (s) => `${c.cyan}${s}${c.reset}`;
 /** Named component groups: each key is the user-facing component name. */
 const COMPONENT_MAP = {
   callout:          ['Callout.astro'],
-  toggle:           ['Toggle.astro', 'ToggleTitle.astro'],
+  toggle:           ['Toggle.astro', 'ToggleTitle.astro', 'Toggle.css'],
   columns:          ['Columns.astro', 'Column.astro'],
   audio:            ['Audio.astro'],
   video:            ['Video.astro'],
@@ -67,7 +67,7 @@ const COMPONENT_MAP = {
   pdf:              ['PdfBlock.astro'],
   pageref:          ['PageRef.astro'],
   databaseref:      ['DatabaseRef.astro'],
-  tableofcontents:  ['TableOfContents.astro'],
+  tableofcontents:  ['TableOfContents.astro', 'TableOfContents.css'],
   emptyblock:       ['EmptyBlock.astro'],
   mention:          ['Mention.astro', 'MentionDate.astro'],
   h1:               ['H1.astro'],
@@ -77,7 +77,7 @@ const COMPONENT_MAP = {
   quote:            ['Quote.astro'],
   styledspan:       ['StyledSpan.astro'],
   image:            ['ImageBlock.astro'],
-  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro'],
+  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro', 'TableBlock.css'],
   coloredparagraph: ['ColoredParagraph.astro'],
   syncedblock:      ['SyncedBlock.astro'],
 };
@@ -198,23 +198,10 @@ function initCommand() {
     console.log(green(`  Created  ${CONFIG_FILE}`));
   }
 
-  // Copy theme.css → src/styles/notro-theme.css (skip if already present)
-  const cfg       = readConfig(cwd);
-  const stylesDir = resolve(cwd, cfg?.stylesDir ?? DEFAULT_STYLES_DIR);
-  ensureDir(stylesDir);
-  const themeSrc  = join(TEMPLATES_DIR, 'theme.css');
-  const themeDest = join(stylesDir, 'notro-theme.css');
-  if (existsSync(themeDest)) {
-    console.log(gray(`  Skipped  ${displayPath(themeDest, cwd)}  (already exists)`));
-  } else {
-    copyFileSync(themeSrc, themeDest);
-    console.log(green(`  Added    ${displayPath(themeDest, cwd)}`));
-  }
-
   console.log(`
 ${bold('Next steps:')}
-  1. Add to your CSS (e.g. ${cyan('src/styles/global.css')}):
-       ${gray('@import "./notro-theme.css";')}
+  1. Add notro design token variables to your CSS (e.g. ${cyan('src/styles/global.css')}):
+       ${gray('Copy the --notro-* variables from the blog template or the notro documentation.')}
 
   2. Add components:
        ${cyan('notro-ui add --all')}
@@ -413,7 +400,7 @@ function printHelp() {
 ${bold('notro-ui')} — Notion block component installer
 
 ${bold('Usage:')}
-  notro-ui ${cyan('init')}                               Initialize project (creates notro.json)
+  notro-ui ${cyan('init')}                               Initialize project ${gray('(creates notro.json)')}
   notro-ui ${cyan('add')} [components...] [--all] [-y]   Add components ${gray('(skips existing)')}
   notro-ui ${cyan('update')} [components...] [--all] [-y] Update components ${yellow('(overwrites local changes)')}
   notro-ui ${cyan('remove')} [components...] [--all]     Remove components

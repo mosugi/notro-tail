@@ -1,8 +1,8 @@
 /**
  * Notion color names → CSS class mapping for tailwind-variants.
  *
- * These classes are defined in notro-theme.css.
- * Edit notro-theme.css to change the actual color values.
+ * These classes are defined in global.css (notro color utilities section).
+ * Edit the --notro-* CSS variables there to retheme all Notion colors at once.
  */
 
 export const notroColorVariants = {

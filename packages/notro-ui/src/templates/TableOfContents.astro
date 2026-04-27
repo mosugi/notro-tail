@@ -2,11 +2,12 @@
 /**
  * Notion table of contents block.
  * List items are injected by rehypeTocPlugin with `.notro-toc-item` and `.notro-toc-level-*`.
- * List and item styles are defined in notro-theme.css.
+ * List structure and level indent styles are in TableOfContents.css.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv, type VariantProps } from 'tailwind-variants';
 import { notroColorVariants } from './colors';
+import './TableOfContents.css';
 
 export const tableOfContents = tv({
   base: 'my-4 rounded-lg border border-[var(--notro-border)] bg-[var(--notro-bg-subtle)] p-4 text-sm',

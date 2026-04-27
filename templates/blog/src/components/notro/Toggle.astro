@@ -1,11 +1,12 @@
 ---
 /**
  * Notion toggle (collapsible) block — renders as <details>.
- * Open/close animation is handled by `.notro-toggle` in notro-theme.css.
+ * Open/close animation and triangle indicator are styled by Toggle.css.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv, type VariantProps } from 'tailwind-variants';
 import { notroColorVariants } from './colors';
+import './Toggle.css';
 
 export const toggle = tv({
   base: 'notro-toggle my-1.5',
