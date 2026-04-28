@@ -14,8 +14,8 @@
 
 - Use **TailwindCSS 4 utility classes only** for all styling
 - Do not use inline styles (`style="..."` attributes)
-- Do not use `<style>` tags inside Astro components
-- Notion block component styles live in **component-owned CSS files** (e.g. `Toggle.css`, `TableBlock.css`) that are imported in each component's frontmatter — do not add component-specific styles to `global.css`
+- Do not use `<style>` tags inside Astro components — **exception**: notro-ui Notion block components (e.g. `Toggle.astro`, `TableBlock.astro`) may use `<style>` for complex CSS selectors (pseudo-elements, parent-context selectors) that cannot be expressed as Tailwind utilities
+- Notion block component styles live in **`<style>` blocks within each component file** — do not add component-specific styles to `global.css`
 - Design tokens (`--notro-*` variables), color utilities (`notro-text-*`, `notro-bg-*`), and markdown/mermaid wrapper styles (`.notro-markdown`) are defined in `global.css`
 - `nt-*` classes in `global.css` are page layout design tokens (`nt-text-*`, `nt-bg-*`, `nt-border-*`) and are separate from Notion block styles
 - Do not manipulate styles directly via `element.style.*` in client-side `<script>` tags
@@ -474,7 +474,7 @@ Two distinct class prefixes are used in this project:
 
 **`notro-*` classes** — Notion block styles managed by notro-ui:
 - Colors: `.notro-text-gray`, `.notro-text-blue`, `.notro-bg-gray`, `.notro-bg-blue`, etc. — defined in `global.css`
-- Component classes: `.notro-toggle` (Toggle.css), `.notro-table` / `.notro-table-wrapper` (TableBlock.css), `.notro-toc-*` (TableOfContents.css) — defined in component-owned CSS files
+- Component classes: `.notro-toggle` (Toggle.astro `<style>`), `.notro-table` / `.notro-table-wrapper` (TableBlock.astro `<style>`), `.notro-toc-*` (TableOfContents.astro `<style>`) — defined inside each component file
 - Markdown wrapper: `.notro-markdown` (applied by `NotroContent`, scopes pre/code/task-list/mermaid styles) — defined in `global.css`
 
 ---

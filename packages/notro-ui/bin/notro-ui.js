@@ -59,7 +59,7 @@ const cyan   = (s) => `${c.cyan}${s}${c.reset}`;
 /** Named component groups: each key is the user-facing component name. */
 const COMPONENT_MAP = {
   callout:          ['Callout.astro'],
-  toggle:           ['Toggle.astro', 'ToggleTitle.astro', 'Toggle.css'],
+  toggle:           ['Toggle.astro', 'ToggleTitle.astro'],
   columns:          ['Columns.astro', 'Column.astro'],
   audio:            ['Audio.astro'],
   video:            ['Video.astro'],
@@ -67,7 +67,7 @@ const COMPONENT_MAP = {
   pdf:              ['PdfBlock.astro'],
   pageref:          ['PageRef.astro'],
   databaseref:      ['DatabaseRef.astro'],
-  tableofcontents:  ['TableOfContents.astro', 'TableOfContents.css'],
+  tableofcontents:  ['TableOfContents.astro'],
   emptyblock:       ['EmptyBlock.astro'],
   mention:          ['Mention.astro', 'MentionDate.astro'],
   h1:               ['H1.astro'],
@@ -77,7 +77,7 @@ const COMPONENT_MAP = {
   quote:            ['Quote.astro'],
   styledspan:       ['StyledSpan.astro'],
   image:            ['ImageBlock.astro'],
-  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro', 'TableBlock.css'],
+  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro'],
   coloredparagraph: ['ColoredParagraph.astro'],
   syncedblock:      ['SyncedBlock.astro'],
 };
