@@ -2,7 +2,7 @@
 /**
  * Notion table of contents block.
  * List items are injected by rehypeTocPlugin with `.notro-toc-item` and `.notro-toc-level-*`.
- * List structure and level indent styles are in the <style> block below.
+ * Styles for those classes are defined in global.css (required because they are not Astro components).
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv, type VariantProps } from 'tailwind-variants';
@@ -25,27 +25,3 @@ const { color, class: className, ...rest } = Astro.props;
   <p class={tableOfContentsTitle()} data-slot="table-of-contents-title">📋 目次</p>
   <slot />
 </nav>
-
-<style>
-.notro-toc-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.notro-toc-item {
-  line-height: 1.6;
-}
-.notro-toc-item a {
-  text-decoration: none;
-  font-size: 0.875rem;
-  color: var(--notro-text-muted);
-}
-.notro-toc-item a:hover {
-  text-decoration: underline;
-  color: var(--notro-blue);
-}
-.notro-toc-level-1 { padding-left: 0; }
-.notro-toc-level-2 { padding-left: 1rem; }
-.notro-toc-level-3 { padding-left: 2rem; }
-.notro-toc-level-4 { padding-left: 3rem; }
-</style>

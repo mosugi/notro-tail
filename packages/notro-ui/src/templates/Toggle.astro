@@ -1,14 +1,15 @@
 ---
 /**
  * Notion toggle (collapsible) block — renders as <details>.
- * Open/close animation and triangle indicator are in the <style> block below.
+ * Uses group/toggle for open-state detection; children are animated via
+ * the notro-toggle-fadein keyframe defined in global.css.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv, type VariantProps } from 'tailwind-variants';
 import { notroColorVariants } from './colors';
 
 export const toggle = tv({
-  base: 'notro-toggle my-1.5',
+  base: 'notro-toggle my-1.5 group/toggle [&>:not(summary)]:animate-[notro-toggle-fadein_0.15s_ease]',
   variants: { color: notroColorVariants },
   defaultVariants: { color: 'default' },
 });
@@ -21,35 +22,3 @@ const { color, class: className, ...rest } = Astro.props;
 <details class={toggle({ color, class: className })} data-slot="toggle" {...rest}>
   <slot />
 </details>
-
-<style>
-@keyframes notro-toggle-fadein {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.notro-toggle > summary {
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-}
-.notro-toggle > summary::-webkit-details-marker {
-  display: none;
-}
-.notro-toggle > summary::before {
-  content: "▶";
-  display: inline-block;
-  font-size: 0.6em;
-  margin-right: 0.5em;
-  transition: transform 200ms;
-  transform-origin: center;
-  vertical-align: middle;
-  color: var(--notro-text-subtle);
-}
-.notro-toggle[open] > summary::before {
-  transform: rotate(90deg);
-}
-.notro-toggle > :not(summary) {
-  animation: notro-toggle-fadein 0.15s ease;
-}
-</style>
