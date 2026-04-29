@@ -432,12 +432,12 @@ const rehypeTocPlugin: Plugin<[], Root> = () => {
 		const listItems = headings.map((h) => ({
 			type: 'element' as const,
 			tagName: 'li',
-			properties: { className: [`notro-toc-item`, `notro-toc-level-${h.level}`] },
+			properties: { 'data-toc-item': '', 'data-toc-level': h.level },
 			children: [
 				{
 					type: 'element' as const,
 					tagName: 'a',
-					properties: { href: `#${h.id}` },
+					properties: { href: `#${h.id}`, 'data-toc-link': '' },
 					children: [{ type: 'text' as const, value: h.text }],
 				},
 			],
@@ -447,7 +447,7 @@ const rehypeTocPlugin: Plugin<[], Root> = () => {
 			{
 				type: 'element' as const,
 				tagName: 'ul',
-				properties: { className: ['notro-toc-list'] },
+				properties: { 'data-toc-list': '' },
 				children: listItems,
 			},
 		];

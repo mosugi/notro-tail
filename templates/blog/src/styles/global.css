@@ -194,22 +194,4 @@
     from { opacity: 0; }
     to   { opacity: 1; }
   }
-
-  /* Table of contents items (injected by rehypeTocPlugin — not Astro components, so global CSS is required) */
-  .notro-toc-list {
-    @apply list-none m-0 p-0;
-  }
-  .notro-toc-item {
-    @apply leading-relaxed;
-  }
-  .notro-toc-item a {
-    @apply no-underline text-sm text-[var(--notro-text-muted)];
-  }
-  .notro-toc-item a:hover {
-    @apply underline text-[var(--notro-blue)];
-  }
-  .notro-toc-level-1 { @apply pl-0; }
-  .notro-toc-level-2 { @apply pl-4; }
-  .notro-toc-level-3 { @apply pl-8; }
-  .notro-toc-level-4 { @apply pl-12; }
 }
