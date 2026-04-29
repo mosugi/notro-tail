@@ -61,30 +61,48 @@ const NOTION_CUSTOM_ELEMENTS = [
 	'mention-date',
 ];
 
-// ── Notion color attribute → CSS class conversion ─────────────────────────
+// ── Notion color attribute → Tailwind class conversion ────────────────────
 
-// Notion text color names. Used for both text and background variants.
-const NOTION_COLOR_NAMES = new Set([
-	'gray', 'brown', 'orange', 'yellow', 'green', 'blue', 'purple', 'pink', 'red',
-]);
+// Tailwind arbitrary CSS-variable classes for Notion text colors.
+// Must match the values in notro-ui's colors.ts so Tailwind generates them
+// when scanning the user's installed colors.ts.
+const NOTION_TEXT_CLASSES: Record<string, string> = {
+	gray:   'text-[var(--notro-gray)]',
+	brown:  'text-[var(--notro-brown)]',
+	orange: 'text-[var(--notro-orange)]',
+	yellow: 'text-[var(--notro-yellow)]',
+	green:  'text-[var(--notro-green)]',
+	blue:   'text-[var(--notro-blue)]',
+	purple: 'text-[var(--notro-purple)]',
+	pink:   'text-[var(--notro-pink)]',
+	red:    'text-[var(--notro-red)]',
+};
+
+// Tailwind arbitrary CSS-variable classes for Notion background colors.
+const NOTION_BG_CLASSES: Record<string, string> = {
+	gray:   'bg-[var(--notro-gray-bg)]',
+	brown:  'bg-[var(--notro-brown-bg)]',
+	orange: 'bg-[var(--notro-orange-bg)]',
+	yellow: 'bg-[var(--notro-yellow-bg)]',
+	green:  'bg-[var(--notro-green-bg)]',
+	blue:   'bg-[var(--notro-blue-bg)]',
+	purple: 'bg-[var(--notro-purple-bg)]',
+	pink:   'bg-[var(--notro-pink-bg)]',
+	red:    'bg-[var(--notro-red-bg)]',
+};
 
 /**
- * Maps a Notion color attribute value to a notro CSS class.
+ * Maps a Notion color attribute value to a Tailwind arbitrary CSS-variable class.
  * Handles the current `_bg` suffix format and the legacy `_background` suffix.
- * CSS classes are defined in notro-theme.css.
  */
 function notionColorToClass(color: string): string {
 	if (!color || color === 'default') return '';
 	if (color.endsWith('_bg')) {
-		const base = color.slice(0, -3);
-		if (NOTION_COLOR_NAMES.has(base)) return `notro-bg-${base}`;
+		return NOTION_BG_CLASSES[color.slice(0, -3)] ?? '';
 	} else if (color.endsWith('_background')) {
-		const base = color.slice(0, -'_background'.length);
-		if (NOTION_COLOR_NAMES.has(base)) return `notro-bg-${base}`;
-	} else if (NOTION_COLOR_NAMES.has(color)) {
-		return `notro-text-${color}`;
+		return NOTION_BG_CLASSES[color.slice(0, -'_background'.length)] ?? '';
 	}
-	return '';
+	return NOTION_TEXT_CLASSES[color] ?? '';
 }
 
 function appendClass(properties: Record<string, unknown>, cls: string): void {
@@ -97,7 +115,7 @@ function appendClass(properties: Record<string, unknown>, cls: string): void {
 
 /**
  * Rehype plugin: converts Notion `color` attributes on block and inline elements
- * to `notro-*` CSS classes (defined in notro-theme.css).
+ * to Tailwind arbitrary CSS-variable classes (e.g. `text-[var(--notro-gray)]`).
  *
  * MDX's component substitution does not apply to HTML elements that come from
  * rehype-raw (raw HTML processed from the markdown source). This plugin runs

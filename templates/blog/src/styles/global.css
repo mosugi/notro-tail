@@ -118,32 +118,6 @@
   .nt-border-30 { border-color: rgb(var(--nt-text-rgb) / 0.30); }
 }
 
-/* ── Notion color utilities (notro-text-* / notro-bg-*) ──────────────────── */
-/*
- * Used by notro-ui components via colors.ts.
- * Edit the --notro-* variables above to retheme all Notion colors at once.
- */
-@layer utilities {
-  .notro-text-gray   { color: var(--notro-gray); }
-  .notro-text-brown  { color: var(--notro-brown); }
-  .notro-text-orange { color: var(--notro-orange); }
-  .notro-text-yellow { color: var(--notro-yellow); }
-  .notro-text-green  { color: var(--notro-green); }
-  .notro-text-blue   { color: var(--notro-blue); }
-  .notro-text-purple { color: var(--notro-purple); }
-  .notro-text-pink   { color: var(--notro-pink); }
-  .notro-text-red    { color: var(--notro-red); }
-
-  .notro-bg-gray   { background-color: var(--notro-gray-bg); }
-  .notro-bg-brown  { background-color: var(--notro-brown-bg); }
-  .notro-bg-orange { background-color: var(--notro-orange-bg); }
-  .notro-bg-yellow { background-color: var(--notro-yellow-bg); }
-  .notro-bg-green  { background-color: var(--notro-green-bg); }
-  .notro-bg-blue   { background-color: var(--notro-blue-bg); }
-  .notro-bg-purple { background-color: var(--notro-purple-bg); }
-  .notro-bg-pink   { background-color: var(--notro-pink-bg); }
-  .notro-bg-red    { background-color: var(--notro-red-bg); }
-}
 
 /* ── Markdown content (.notro-markdown) ──────────────────────────────────── */
 /*
@@ -181,11 +155,11 @@
     @apply mt-1 shrink-0 cursor-default;
   }
 
-  /* Mermaid diagram wrapper (class injected by rehypeMermaid in mdx-pipeline.ts) */
-  .notro-mermaid {
+  /* Mermaid diagram wrapper (data-mermaid attribute injected by rehypeMermaid) */
+  [data-mermaid] {
     @apply my-6 overflow-x-auto rounded-lg;
   }
-  .notro-mermaid svg {
+  [data-mermaid] svg {
     @apply block;
   }
 
