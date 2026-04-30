@@ -1,0 +1,46 @@
+---
+/**
+ * Notion table block.
+ * Outer table border is on the table element itself; cell borders and
+ * header-row/col styling live in TableCell.astro and TableHeaderCell.astro.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const tableWrapper = tv({
+  base: 'notro-table-wrapper my-4 overflow-x-auto',
+  variants: { fitPageWidth: { true: 'w-full', false: '' } },
+});
+
+export const table = tv({
+  base: 'notro-table w-full border-collapse text-sm border border-[var(--notro-border)]',
+});
+
+type Props = HTMLAttributes<'table'> & {
+  'fit-page-width'?: string;
+  'header-row'?: string;
+  'header-column'?: string;
+  tableWrapperClass?: string;
+};
+
+const {
+  'fit-page-width': fitPageWidth = 'false',
+  'header-row': headerRow = 'false',
+  'header-column': headerColumn = 'false',
+  class: className,
+  tableWrapperClass,
+  ...rest
+} = Astro.props;
+---
+
+<div class={tableWrapper({ fitPageWidth: fitPageWidth === 'true', class: tableWrapperClass })} data-slot="table-wrapper">
+  <table
+    class={table({ class: className })}
+    data-slot="table"
+    data-header-row={headerRow === 'true' ? '' : undefined}
+    data-header-col={headerColumn === 'true' ? '' : undefined}
+    {...rest}
+  >
+    <slot />
+  </table>
+</div>

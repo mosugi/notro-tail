@@ -1,0 +1,16 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const h3 = tv({
+  base: 'mb-2 mt-6 text-xl font-semibold',
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+type Props = Omit<HTMLAttributes<'h3'>, 'color'> & VariantProps<typeof h3>;
+
+const { color, class: className, ...rest } = Astro.props;
+---
+<h3 class={h3({ color, class: className })} data-slot="h3" {...rest}><slot /></h3>

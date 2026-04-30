@@ -1,0 +1,28 @@
+---
+/**
+ * Toggle block title — renders as <summary> inside Toggle (<details>).
+ * The triangle indicator (▶) and open-state rotation are expressed as
+ * Tailwind classes using group-open/toggle from the parent Toggle.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const toggleTitle = tv({
+  base: [
+    'font-medium py-0.5',
+    'list-none cursor-pointer select-none',
+    "before:content-['▶'] before:inline-block before:text-[0.6em] before:mr-[0.5em]",
+    'before:transition-transform before:duration-200 before:origin-center before:align-middle',
+    'before:text-[var(--notro-text-subtle)]',
+    'group-open/toggle:before:rotate-90',
+  ],
+});
+
+type Props = HTMLAttributes<'summary'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<summary class={toggleTitle({ class: className })} data-slot="toggle-title" {...rest}>
+  <slot />
+</summary>

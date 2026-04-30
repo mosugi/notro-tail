@@ -1,0 +1,37 @@
+---
+/**
+ * Notion callout block.
+ * Edit the base classes and color variants to customize callout appearance.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const callout = tv({
+  base: 'flex items-start gap-3 my-4 rounded-lg border border-[var(--notro-border)] p-4',
+  variants: {
+    color: {
+      ...notroColorVariants,
+      default: 'bg-[var(--notro-gray-bg)]',
+    },
+  },
+  defaultVariants: { color: 'default' },
+});
+
+export const calloutIcon = tv({ base: 'text-xl leading-none shrink-0' });
+
+export const calloutContent = tv({ base: 'min-w-0 flex-1 [&>:first-child]:mt-0 [&>:last-child]:mb-0' });
+
+type Props = Omit<HTMLAttributes<'div'>, 'color'> & VariantProps<typeof callout> & {
+  icon?: string;
+};
+
+const { icon, color, class: className, ...rest } = Astro.props;
+---
+
+<div class={callout({ color, class: className })} data-slot="callout" {...rest}>
+  {icon && <span class={calloutIcon()} aria-hidden="true" data-slot="callout-icon">{icon}</span>}
+  <div class={calloutContent()} data-slot="callout-content">
+    <slot />
+  </div>
+</div>

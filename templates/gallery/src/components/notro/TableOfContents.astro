@@ -1,0 +1,40 @@
+---
+/**
+ * Notion table of contents block.
+ * List items are injected by rehypeTocPlugin with data-toc-* attributes.
+ * Styling is done here via [&_[data-toc-*]] arbitrary variants — no global CSS needed.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const tableOfContents = tv({
+  base: [
+    'my-4 rounded-lg border border-[var(--notro-border)] bg-[var(--notro-bg-subtle)] p-4 text-sm',
+    // list reset
+    '[&_[data-toc-list]]:list-none [&_[data-toc-list]]:m-0 [&_[data-toc-list]]:p-0',
+    // item spacing and level indentation
+    '[&_[data-toc-item]]:leading-relaxed',
+    "[&_[data-toc-level='1']]:pl-0",
+    "[&_[data-toc-level='2']]:pl-4",
+    "[&_[data-toc-level='3']]:pl-8",
+    "[&_[data-toc-level='4']]:pl-12",
+    // link styles
+    '[&_[data-toc-link]]:no-underline [&_[data-toc-link]]:text-sm [&_[data-toc-link]]:text-[var(--notro-text-muted)]',
+    '[&_[data-toc-link]:hover]:underline [&_[data-toc-link]:hover]:text-[var(--notro-blue)]',
+  ],
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+export const tableOfContentsTitle = tv({ base: 'font-semibold text-sm text-[var(--notro-text-muted)] mb-2' });
+
+type Props = Omit<HTMLAttributes<'nav'>, 'color'> & VariantProps<typeof tableOfContents>;
+
+const { color, class: className, ...rest } = Astro.props;
+---
+
+<nav class={tableOfContents({ color, class: className })} aria-label="目次" data-slot="table-of-contents" {...rest}>
+  <p class={tableOfContentsTitle()} data-slot="table-of-contents-title">📋 目次</p>
+  <slot />
+</nav>

@@ -1,0 +1,23 @@
+---
+/**
+ * Paragraph element with optional Notion block-level color support.
+ *
+ * Notion emits block-level color annotations as raw HTML:
+ *   <p color="gray_bg">...</p>
+ * This component applies the corresponding CSS class from notroColorVariants.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const coloredP = tv({
+  base: 'mb-4 leading-7',
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+type Props = Omit<HTMLAttributes<'p'>, 'color'> & VariantProps<typeof coloredP>;
+
+const { color, class: className, ...rest } = Astro.props;
+---
+<p class={coloredP({ color, class: className })} data-slot="colored-paragraph" {...rest}><slot /></p>

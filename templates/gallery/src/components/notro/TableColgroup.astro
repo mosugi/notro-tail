@@ -1,0 +1,11 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const tableColgroup = tv({ base: '' });
+
+type Props = HTMLAttributes<'colgroup'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+<colgroup class={tableColgroup({ class: className })} data-slot="table-colgroup" {...rest}><slot /></colgroup>
