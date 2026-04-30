@@ -1,7 +1,7 @@
 ---
-"rehype-beautiful-mermaid": major
-"notro-loader": major
-"notro-ui": major
+"rehype-beautiful-mermaid": minor
+"notro-loader": minor
+"notro-ui": minor
 ---
 
 Migrate to pure Tailwind CSS approach, removing all CSS class injection
