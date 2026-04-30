@@ -120,32 +120,26 @@ body {
   to   { opacity: 1; }
 }
 
-/* ── Color utility classes ───────────────────────────────────────────────── */
-.notro-text-gray   { color: var(--notro-gray); }
-.notro-text-brown  { color: var(--notro-brown); }
-.notro-text-orange { color: var(--notro-orange); }
-.notro-text-yellow { color: var(--notro-yellow); }
-.notro-text-green  { color: var(--notro-green); }
-.notro-text-blue   { color: var(--notro-blue); }
-.notro-text-purple { color: var(--notro-purple); }
-.notro-text-pink   { color: var(--notro-pink); }
-.notro-text-red    { color: var(--notro-red); }
+/* ── Color utilities — matches classes injected by rehypeNotionColorPlugin ── */
+.text-\[var\(--notro-gray\)\]   { color: var(--notro-gray); }
+.text-\[var\(--notro-brown\)\]  { color: var(--notro-brown); }
+.text-\[var\(--notro-orange\)\] { color: var(--notro-orange); }
+.text-\[var\(--notro-yellow\)\] { color: var(--notro-yellow); }
+.text-\[var\(--notro-green\)\]  { color: var(--notro-green); }
+.text-\[var\(--notro-blue\)\]   { color: var(--notro-blue); }
+.text-\[var\(--notro-purple\)\] { color: var(--notro-purple); }
+.text-\[var\(--notro-pink\)\]   { color: var(--notro-pink); }
+.text-\[var\(--notro-red\)\]    { color: var(--notro-red); }
 
-.notro-bg-gray   { background-color: var(--notro-gray-bg); }
-.notro-bg-brown  { background-color: var(--notro-brown-bg); }
-.notro-bg-orange { background-color: var(--notro-orange-bg); }
-.notro-bg-yellow { background-color: var(--notro-yellow-bg); }
-.notro-bg-green  { background-color: var(--notro-green-bg); }
-.notro-bg-blue   { background-color: var(--notro-blue-bg); }
-.notro-bg-purple { background-color: var(--notro-purple-bg); }
-.notro-bg-pink   { background-color: var(--notro-pink-bg); }
-.notro-bg-red    { background-color: var(--notro-red-bg); }
-
-/* TOC indent levels */
-.notro-toc-level-1 { padding-left: 0; }
-.notro-toc-level-2 { padding-left: 1rem; }
-.notro-toc-level-3 { padding-left: 2rem; }
-.notro-toc-level-4 { padding-left: 3rem; }
+.bg-\[var\(--notro-gray-bg\)\]   { background-color: var(--notro-gray-bg); }
+.bg-\[var\(--notro-brown-bg\)\]  { background-color: var(--notro-brown-bg); }
+.bg-\[var\(--notro-orange-bg\)\] { background-color: var(--notro-orange-bg); }
+.bg-\[var\(--notro-yellow-bg\)\] { background-color: var(--notro-yellow-bg); }
+.bg-\[var\(--notro-green-bg\)\]  { background-color: var(--notro-green-bg); }
+.bg-\[var\(--notro-blue-bg\)\]   { background-color: var(--notro-blue-bg); }
+.bg-\[var\(--notro-purple-bg\)\] { background-color: var(--notro-purple-bg); }
+.bg-\[var\(--notro-pink-bg\)\]   { background-color: var(--notro-pink-bg); }
+.bg-\[var\(--notro-red-bg\)\]    { background-color: var(--notro-red-bg); }
 
 /* Task list */
 .notro-markdown .contains-task-list {
@@ -256,20 +250,24 @@ body {
 }
 
 /* ── TOC ─────────────────────────────────────────────────────────────────── */
-.notro-toc-list {
+[data-toc-list] {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.notro-toc-item {
+[data-toc-item] {
   line-height: 1.6;
 }
-.notro-toc-item a {
+[data-toc-level="1"] { padding-left: 0; }
+[data-toc-level="2"] { padding-left: 1rem; }
+[data-toc-level="3"] { padding-left: 2rem; }
+[data-toc-level="4"] { padding-left: 3rem; }
+[data-toc-link] {
   text-decoration: none;
   font-size: 0.875rem;
   color: var(--notro-text-muted);
 }
-.notro-toc-item a:hover {
+[data-toc-link]:hover {
   text-decoration: underline;
   color: var(--notro-blue);
 }

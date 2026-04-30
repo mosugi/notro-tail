@@ -230,6 +230,29 @@ const NOTRO_CSS = `/* notro-ui design tokens                                    
 [data-mermaid] svg {
   display: block;
 }
+
+/* Color utilities — plain CSS fallback for projects without Tailwind.
+ * These selectors match the classes injected by rehypeNotionColorPlugin.
+ * Tailwind users can delete this section (Tailwind generates these rules). */
+.text-\\[var\\(--notro-gray\\)\\]   { color: var(--notro-gray); }
+.text-\\[var\\(--notro-brown\\)\\]  { color: var(--notro-brown); }
+.text-\\[var\\(--notro-orange\\)\\] { color: var(--notro-orange); }
+.text-\\[var\\(--notro-yellow\\)\\] { color: var(--notro-yellow); }
+.text-\\[var\\(--notro-green\\)\\]  { color: var(--notro-green); }
+.text-\\[var\\(--notro-blue\\)\\]   { color: var(--notro-blue); }
+.text-\\[var\\(--notro-purple\\)\\] { color: var(--notro-purple); }
+.text-\\[var\\(--notro-pink\\)\\]   { color: var(--notro-pink); }
+.text-\\[var\\(--notro-red\\)\\]    { color: var(--notro-red); }
+
+.bg-\\[var\\(--notro-gray-bg\\)\\]   { background-color: var(--notro-gray-bg); }
+.bg-\\[var\\(--notro-brown-bg\\)\\]  { background-color: var(--notro-brown-bg); }
+.bg-\\[var\\(--notro-orange-bg\\)\\] { background-color: var(--notro-orange-bg); }
+.bg-\\[var\\(--notro-yellow-bg\\)\\] { background-color: var(--notro-yellow-bg); }
+.bg-\\[var\\(--notro-green-bg\\)\\]  { background-color: var(--notro-green-bg); }
+.bg-\\[var\\(--notro-blue-bg\\)\\]   { background-color: var(--notro-blue-bg); }
+.bg-\\[var\\(--notro-purple-bg\\)\\] { background-color: var(--notro-purple-bg); }
+.bg-\\[var\\(--notro-pink-bg\\)\\]   { background-color: var(--notro-pink-bg); }
+.bg-\\[var\\(--notro-red-bg\\)\\]    { background-color: var(--notro-red-bg); }
 `;
 
 // ── File system helpers ───────────────────────────────────────────────────────
