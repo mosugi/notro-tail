@@ -1,0 +1,28 @@
+{
+  "outDir": "src/components/notro",
+  "stylesDir": "src/styles",
+  "components": [
+    { "name": "callout",          "version": "0.1.0" },
+    { "name": "toggle",           "version": "0.1.0" },
+    { "name": "columns",          "version": "0.1.0" },
+    { "name": "audio",            "version": "0.1.0" },
+    { "name": "video",            "version": "0.1.0" },
+    { "name": "file",             "version": "0.1.0" },
+    { "name": "pdf",              "version": "0.1.0" },
+    { "name": "pageref",          "version": "0.1.0" },
+    { "name": "databaseref",      "version": "0.1.0" },
+    { "name": "tableofcontents",  "version": "0.1.0" },
+    { "name": "emptyblock",       "version": "0.1.0" },
+    { "name": "mention",          "version": "0.1.0" },
+    { "name": "h1",               "version": "0.1.0" },
+    { "name": "h2",               "version": "0.1.0" },
+    { "name": "h3",               "version": "0.1.0" },
+    { "name": "h4",               "version": "0.1.0" },
+    { "name": "quote",            "version": "0.1.0" },
+    { "name": "styledspan",       "version": "0.1.0" },
+    { "name": "image",            "version": "0.1.0" },
+    { "name": "table",            "version": "0.1.0" },
+    { "name": "coloredparagraph", "version": "0.1.0" },
+    { "name": "syncedblock",      "version": "0.1.0" }
+  ]
+}
