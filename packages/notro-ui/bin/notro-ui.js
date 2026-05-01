@@ -20,7 +20,7 @@
  */
 
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve, relative } from 'node:path';
+import { dirname, join, resolve, relative, basename } from 'node:path';
 import {
   copyFileSync,
   mkdirSync,
@@ -29,6 +29,7 @@ import {
   writeFileSync,
   unlinkSync,
 } from 'node:fs';
+import { execSync } from 'node:child_process';
 import readline from 'node:readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -143,6 +144,82 @@ function isOutdated(installed, current) {
     if ((a[i] ?? 0) > (b[i] ?? 0)) return false;
   }
   return false;
+}
+
+// ── Package manager detection ─────────────────────────────────────────────────
+
+/** Detect the active package manager via user-agent env or lock files. */
+function detectPackageManager(cwd) {
+  const ua = process.env.npm_config_user_agent ?? '';
+  if (ua.startsWith('pnpm')) return 'pnpm';
+  if (ua.startsWith('yarn')) return 'yarn';
+  if (ua.startsWith('bun'))  return 'bun';
+  if (ua.startsWith('npm'))  return 'npm';
+
+  if (existsSync(join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (existsSync(join(cwd, 'yarn.lock')))       return 'yarn';
+  if (existsSync(join(cwd, 'bun.lockb')))       return 'bun';
+  return 'npm';
+}
+
+/** Check if a package is already listed in package.json dependencies. */
+function isDepInstalled(pkg, cwd) {
+  try {
+    const pkgJson = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8'));
+    return !!(pkgJson.dependencies?.[pkg] || pkgJson.devDependencies?.[pkg]);
+  } catch {
+    return false;
+  }
+}
+
+/** Run `<pm> add <packages...>` in the given cwd. */
+function installDeps(packages, cwd) {
+  const pm  = detectPackageManager(cwd);
+  const sub = pm === 'npm' ? 'install' : 'add';
+  execSync(`${pm} ${sub} ${packages.join(' ')}`, { cwd, stdio: 'inherit' });
+}
+
+// ── CSS import injection ──────────────────────────────────────────────────────
+
+/**
+ * Inject `@import "<notro.css>"` into the project's main stylesheet, or fall
+ * back to adding a JS import in Layout.astro's frontmatter.
+ *
+ * Returns the path of the file that was modified, or null if already present.
+ */
+function injectCssImport(cssFile, cwd) {
+  const cssFilename = basename(cssFile);
+
+  // Look for a main stylesheet in the same styles directory
+  const stylesDir = dirname(cssFile);
+  for (const name of ['global.css', 'main.css', 'index.css', 'style.css']) {
+    const candidate = join(stylesDir, name);
+    if (!existsSync(candidate) || candidate === cssFile) continue;
+    const content    = readFileSync(candidate, 'utf8');
+    const importLine = `@import "./${cssFilename}";`;
+    if (content.includes(importLine)) return null; // already injected
+    writeFileSync(candidate, importLine + '\n' + content);
+    return candidate;
+  }
+
+  // Fall back: inject a JS import into Layout.astro frontmatter
+  for (const layoutRelPath of ['src/layouts/Layout.astro', 'src/layouts/BaseLayout.astro']) {
+    const layout = join(cwd, layoutRelPath);
+    if (!existsSync(layout)) continue;
+    const content    = readFileSync(layout, 'utf8');
+    const rel2css    = relative(dirname(layout), cssFile).replace(/\\/g, '/');
+    const importPath = rel2css.startsWith('.') ? rel2css : `./${rel2css}`;
+    const importLine = `import "${importPath}";`;
+    if (content.includes(importLine)) return null; // already injected
+    // Insert after the opening `---`
+    const updated = content.startsWith('---\n')
+      ? `---\n${importLine}\n` + content.slice(4)
+      : `---\n${importLine}\n---\n\n` + content;
+    writeFileSync(layout, updated);
+    return layout;
+  }
+
+  return null;
 }
 
 // ── notro.css template ────────────────────────────────────────────────────────
@@ -316,18 +393,26 @@ function initCommand() {
 
   ensureDir(stylesDir);
 
+  let cssCreated = false;
   if (existsSync(cssFile)) {
     console.log(yellow(`  ${rel(cssFile, cwd)} already exists — skipping.`));
   } else {
     writeFileSync(cssFile, NOTRO_CSS);
     console.log(green(`  Created  ${rel(cssFile, cwd)}`));
+    cssCreated = true;
   }
 
-  console.log(`\n${gray('Next steps:')}`);
-  console.log(gray(`  1. Import notro.css in your main stylesheet:`));
-  console.log(gray(`       @import "./${rel(cssFile, cwd)}";`));
-  console.log(gray(`  2. Add components:`));
-  console.log(gray(`       notro-ui add -a\n`));
+  // ③ Inject @import into the main stylesheet (or Layout.astro as fallback)
+  const injected = injectCssImport(cssFile, cwd);
+  if (injected) {
+    console.log(green(`  Updated  ${rel(injected, cwd)}  ${gray('(added @import)')}`));
+  } else if (cssCreated) {
+    console.log(gray(`  Tip: import notro.css in your main stylesheet:`));
+    console.log(gray(`         @import "./${rel(cssFile, cwd)}";`));
+  }
+
+  console.log(`\n${gray('Next step:')}`);
+  console.log(gray(`  notro-ui add -a\n`));
 }
 
 async function addCommand(names, flags) {
@@ -390,6 +475,18 @@ async function addCommand(names, flags) {
 
   writeConfig(cwd, cfg);
   console.log(green(`  Updated  ${CONFIG_FILE}`));
+
+  // Install tailwind-variants if not already present
+  if (addedCount > 0 && !isDepInstalled('tailwind-variants', cwd)) {
+    const pm = detectPackageManager(cwd);
+    console.log(`\n  Installing ${bold('tailwind-variants')} via ${pm}...`);
+    try {
+      installDeps(['tailwind-variants'], cwd);
+    } catch {
+      console.log(yellow(`  Warning: failed to install tailwind-variants automatically.`));
+      console.log(yellow(`  Run manually: ${bold(`${pm} ${pm === 'npm' ? 'install' : 'add'} tailwind-variants`)}`));
+    }
+  }
 
   console.log(`\n${green('Done!')}  ${addedCount} added, ${skippedCount} skipped.\n`);
 }
