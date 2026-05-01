@@ -1,0 +1,25 @@
+---
+/**
+ * Notion database reference link.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const databaseRef = tv({
+  base: 'inline-flex items-center gap-1 underline underline-offset-2 hover:opacity-70',
+});
+
+export const databaseRefIcon = tv({ base: 'text-[0.9em]' });
+
+type Props = HTMLAttributes<'a'> & {
+  url: string;
+  inline?: string;
+  icon?: string;
+};
+
+const { url, inline: _inline, icon = '🗄️', class: className, ...rest } = Astro.props;
+---
+<a href={url} class={databaseRef({ class: className })} data-slot="database-ref" {...rest}>
+  <span class={databaseRefIcon()} aria-hidden="true" data-slot="database-ref-icon">{icon}</span>
+  <slot />
+</a>

@@ -4,7 +4,14 @@ import { tv, type VariantProps } from 'tailwind-variants';
 import { notroColorVariants } from './colors';
 
 export const tableHeaderCell = tv({
-  base: 'px-3 py-2 text-left text-sm font-semibold',
+  base: [
+    'px-3 py-2 text-left text-sm font-semibold align-top',
+    'border border-[var(--notro-border)]',
+    // header-row: apply subtle bg to first-row th cells
+    '[.notro-table[data-header-row]_tr:first-child_&]:bg-[var(--notro-bg-subtle)]',
+    // header-col: apply subtle bg to first-column th cells
+    '[.notro-table[data-header-col]_tr_&:first-child]:bg-[var(--notro-bg-subtle)]',
+  ],
   variants: { color: notroColorVariants },
   defaultVariants: { color: 'default' },
 });

@@ -29,10 +29,9 @@ export interface RehypeMermaidOptions {
   theme?: string;
   /**
    * CSS class name applied to the wrapper <div> around each rendered SVG.
-   * Defaults to 'notro-mermaid' for notro-ecosystem projects.
-   * Override when using this plugin outside of the notro ecosystem.
+   * When omitted, a `data-mermaid` attribute is used instead so that styling
+   * can be applied via a `[data-mermaid]` selector in global CSS.
    *
-   * @default 'notro-mermaid'
    * @example 'mermaid-diagram'
    */
   className?: string;
@@ -88,7 +87,9 @@ export const rehypeMermaid: Plugin<[RehypeMermaidOptions?], Root> = (options = {
       const divNode: Element = {
         type: 'element',
         tagName: 'div',
-        properties: { className: [options.className ?? 'notro-mermaid'] },
+        properties: options.className
+          ? { className: [options.className] }
+          : { 'data-mermaid': '' },
         children: svgRoot.children as ElementContent[],
       };
       parent.children.splice(index, 1, divNode);

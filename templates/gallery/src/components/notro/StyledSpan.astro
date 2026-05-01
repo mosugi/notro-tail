@@ -1,0 +1,39 @@
+---
+/**
+ * Inline styled span — handles Notion text colors, underline, and Shiki syntax colors.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const styledSpan = tv({
+  base: '',
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+type Props = Omit<HTMLAttributes<'span'>, 'style' | 'color'> & VariantProps<typeof styledSpan> & {
+  underline?: string;
+  // Notion/Shiki passes style as a React-style object or CSS string
+  style?: string | Record<string, string>;
+};
+
+const { color, underline, class: className, style: styleProp, ...rest } = Astro.props;
+
+// styleProp may be a React-style object from Shiki or a CSS string.
+const styleObj: Record<string, string> =
+  typeof styleProp === 'object' && styleProp !== null
+    ? { ...(styleProp as Record<string, string>) }
+    : typeof styleProp === 'string' && styleProp
+      ? Object.fromEntries(
+          styleProp
+            .split(';')
+            .filter(Boolean)
+            .map((p) => p.split(':').map((s) => s.trim()) as [string, string]),
+        )
+      : {};
+if (underline === 'true') styleObj['text-decoration'] = 'underline';
+const style = Object.keys(styleObj).length > 0 ? styleObj : undefined;
+---
+
+<span class={styledSpan({ color, class: className })} style={style} data-slot="styled-span" {...rest}><slot /></span>

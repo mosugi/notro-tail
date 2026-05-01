@@ -1,0 +1,18 @@
+---
+/**
+ * Notion columns layout — responsive 2-column grid (stacks on mobile).
+ * Edit the grid classes below to adjust column count and gap.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const columns = tv({ base: 'grid grid-cols-1 gap-8 my-4 md:grid-cols-2' });
+
+type Props = HTMLAttributes<'div'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<div class={columns({ class: className })} data-slot="columns" {...rest}>
+  <slot />
+</div>

@@ -1,0 +1,33 @@
+---
+/**
+ * Notion image block — renders as <figure> with optional caption.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const imageBlock = tv({
+  slots: {
+    root: 'my-4',
+    img: 'h-auto max-w-full',
+    caption: 'text-sm text-[var(--notro-text-muted)] mt-1.5 text-center',
+  },
+});
+
+type Props = HTMLAttributes<'figure'> & {
+  src: string;
+  alt?: string;
+  caption?: string;
+};
+
+const { src, alt, caption, class: className, ...rest } = Astro.props;
+const { root, img, caption: captionClass } = imageBlock();
+---
+
+<figure class={root({ class: className })} data-slot="image-block" {...rest}>
+  <img src={src} alt={alt ?? ''} loading="lazy" decoding="async" class={img()} data-slot="image-block-img" />
+  {caption && (
+    <figcaption class={captionClass()} data-slot="image-block-caption">
+      {caption}
+    </figcaption>
+  )}
+</figure>

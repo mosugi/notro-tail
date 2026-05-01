@@ -1,0 +1,19 @@
+---
+/**
+ * Inline mention (user / page / database / data source / agent).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const mention = tv({
+  base: 'underline underline-offset-2 hover:opacity-70',
+});
+
+type Props = HTMLAttributes<'a'> & {
+  url: string;
+};
+
+const { url, class: className, ...rest } = Astro.props;
+---
+
+<a href={url} class={mention({ class: className })} data-slot="mention" {...rest}>@<slot /></a>

@@ -310,6 +310,9 @@ importers:
       notro-loader:
         specifier: workspace:*
         version: link:../../packages/notro-loader
+      tailwind-variants:
+        specifier: ^3.2.2
+        version: 3.2.2(tailwind-merge@3.5.0)(tailwindcss@4.2.2)
       tailwindcss:
         specifier: ^4.2.1
         version: 4.2.2

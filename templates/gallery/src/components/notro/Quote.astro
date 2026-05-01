@@ -1,0 +1,22 @@
+---
+/**
+ * Notion quote block — renders as <blockquote>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const quote = tv({
+  base: 'my-4 border-l-[3px] border-[var(--notro-border)] pl-4 italic [&>p:first-child]:mt-0 [&>p:last-child]:mb-0',
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+type Props = Omit<HTMLAttributes<'blockquote'>, 'color'> & VariantProps<typeof quote>;
+
+const { color, class: className, ...rest } = Astro.props;
+---
+
+<blockquote class={quote({ color, class: className })} data-slot="quote" {...rest}>
+  <slot />
+</blockquote>

@@ -1,0 +1,11 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const tableCol = tv({ base: '' });
+
+type Props = HTMLAttributes<'col'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+<col class={tableCol({ class: className })} data-slot="table-col" {...rest} />
