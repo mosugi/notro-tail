@@ -3,7 +3,7 @@
  *
  * Pass this to NotroContent via the components prop:
  *
- *   import { NotroContent } from 'notro';
+ *   import { NotroContent } from 'notro-loader';
  *   import { notroComponents } from '@/components/notro';
  *
  *   <NotroContent markdown={md} {linkToPages} components={notroComponents} />
