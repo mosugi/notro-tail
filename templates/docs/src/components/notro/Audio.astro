@@ -1,0 +1,25 @@
+---
+/**
+ * Notion audio embed block.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'figure'> & { src: string };
+
+const { src, class: className, ...rest } = Astro.props;
+---
+
+<figure class:list={['notro-audio', className]} data-slot="audio" {...rest}>
+  <audio controls src={src} class="notro-audio__controls" data-slot="audio-controls"></audio>
+  {Astro.slots.has('default') && (
+    <figcaption class="notro-audio__caption" data-slot="audio-caption">
+      <slot />
+    </figcaption>
+  )}
+</figure>
+
+<style>
+  .notro-audio { margin-block: 1rem; }
+  .notro-audio__controls { width: 100%; }
+  .notro-audio__caption { margin-top: 0.375rem; font-size: var(--sl-text-sm); color: var(--sl-color-gray-3); }
+</style>

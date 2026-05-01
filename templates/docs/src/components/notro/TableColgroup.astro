@@ -1,0 +1,7 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'colgroup'>;
+const { class: className, ...rest } = Astro.props;
+---
+<colgroup class={className} data-slot="table-colgroup" {...rest}><slot /></colgroup>

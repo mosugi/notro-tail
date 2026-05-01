@@ -1,0 +1,14 @@
+---
+/**
+ * Starlight's .sl-markdown-content th CSS handles base styling.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'th'>, 'color'> & { color?: NotroColor };
+
+const { color = 'default', class: className, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+---
+<th class:list={[colorClass, className]} data-slot="table-header-cell" {...rest}><slot /></th>

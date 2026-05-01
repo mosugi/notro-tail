@@ -1,0 +1,18 @@
+---
+/**
+ * Notion quote block — renders as <blockquote>.
+ * Starlight's .sl-markdown-content blockquote CSS handles visual styling.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'blockquote'>, 'color'> & { color?: NotroColor };
+
+const { color = 'default', class: className, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+---
+
+<blockquote class:list={[colorClass, className]} data-slot="quote" {...rest}>
+  <slot />
+</blockquote>
