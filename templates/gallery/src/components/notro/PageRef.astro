@@ -1,0 +1,23 @@
+---
+/**
+ * Notion page reference link.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const pageRef = tv({
+  base: 'inline-flex items-center gap-1 underline underline-offset-2 hover:opacity-70',
+});
+
+export const pageRefIcon = tv({ base: 'text-[0.9em]' });
+
+type Props = HTMLAttributes<'a'> & {
+  url: string;
+};
+
+const { url, class: className, ...rest } = Astro.props;
+---
+<a href={url} class={pageRef({ class: className })} data-slot="page-ref" {...rest}>
+  <span class={pageRefIcon()} aria-hidden="true" data-slot="page-ref-icon">📄</span>
+  <slot />
+</a>

@@ -1,0 +1,25 @@
+---
+/**
+ * Notion columns layout — responsive multi-column grid (stacks on mobile).
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'>;
+const { class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['notro-columns', className]} data-slot="columns" {...rest}>
+  <slot />
+</div>
+
+<style>
+  .notro-columns {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-block: 1rem;
+  }
+  @media (min-width: 50em) {
+    .notro-columns { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+  }
+</style>

@@ -1,0 +1,31 @@
+---
+/**
+ * Notion PDF embed block.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import { tv } from 'tailwind-variants';
+
+export const pdfBlock = tv({
+  slots: {
+    root: 'my-4',
+    embed: 'w-full min-h-[500px] border-0',
+    caption: 'text-sm text-[var(--notro-text-muted)] mt-1.5',
+  },
+});
+
+type Props = HTMLAttributes<'figure'> & {
+  src: string;
+};
+
+const { src, class: className, ...rest } = Astro.props;
+const { root, embed, caption } = pdfBlock();
+---
+
+<figure class={root({ class: className })} data-slot="pdf-block" {...rest}>
+  <iframe src={src} class={embed()} title="PDF" loading="lazy" data-slot="pdf-block-embed"></iframe>
+  {Astro.slots.has('default') && (
+    <figcaption class={caption()} data-slot="pdf-block-caption">
+      <slot />
+    </figcaption>
+  )}
+</figure>

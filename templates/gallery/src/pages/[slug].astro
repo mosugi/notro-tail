@@ -3,6 +3,7 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import { NotroContent } from "notro-loader";
 import { getPlainText } from "notro-loader/utils";
+import { notroComponents } from "../components/notro";
 
 export async function getStaticPaths() {
   const works = await getCollection("works");
@@ -60,7 +61,7 @@ const externalUrl = work.data.properties.URL?.url;
       </header>
 
       <div class="notro-markdown">
-        <NotroContent markdown={work.data.markdown} />
+        <NotroContent markdown={work.data.markdown} components={notroComponents} />
       </div>
     </article>
   </main>

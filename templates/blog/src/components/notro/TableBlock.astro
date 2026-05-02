@@ -1,7 +1,8 @@
 ---
 /**
  * Notion table block.
- * `.notro-table-wrapper` and `.notro-table` selectors are styled in notro-theme.css.
+ * Outer table border is on the table element itself; cell borders and
+ * header-row/col styling live in TableCell.astro and TableHeaderCell.astro.
  */
 import type { HTMLAttributes } from 'astro/types';
 import { tv } from 'tailwind-variants';
@@ -11,7 +12,9 @@ export const tableWrapper = tv({
   variants: { fitPageWidth: { true: 'w-full', false: '' } },
 });
 
-export const table = tv({ base: 'notro-table w-full border-collapse text-sm' });
+export const table = tv({
+  base: 'notro-table w-full border-collapse text-sm border border-[var(--notro-border)]',
+});
 
 type Props = HTMLAttributes<'table'> & {
   'fit-page-width'?: string;

@@ -1,36 +1,43 @@
 @import "tailwindcss";
 
-:root {
-  --nt-text-rgb: 55 53 47;
+/* ── notro design tokens ─────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    /* Base RGB channels for Notion's default text color (#37352f). */
+    --nt-text-rgb: 55 53 47;
 
-  --notro-gray:   #787774;
-  --notro-brown:  #9F6B53;
-  --notro-orange: #D9730D;
-  --notro-yellow: #CB912F;
-  --notro-green:  #448361;
-  --notro-blue:   #337EA9;
-  --notro-purple: #9065B0;
-  --notro-pink:   #C14C8A;
-  --notro-red:    #D44C47;
+    /* Design tokens */
+    --notro-text:        rgb(55 53 47);
+    --notro-text-muted:  rgb(55 53 47 / 0.65);
+    --notro-text-subtle: rgb(55 53 47 / 0.45);
+    --notro-border:      rgb(55 53 47 / 0.09);
+    --notro-bg-subtle:   rgb(55 53 47 / 0.04);
 
-  --notro-gray-bg:   #F1F1EF;
-  --notro-brown-bg:  #F4EEEE;
-  --notro-orange-bg: #FBECDD;
-  --notro-yellow-bg: #FBF3DB;
-  --notro-green-bg:  #EDF3EC;
-  --notro-blue-bg:   #E7F3F8;
-  --notro-purple-bg: #F6F3F9;
-  --notro-pink-bg:   #FAF1F5;
-  --notro-red-bg:    #FDEBEC;
+    /* Notion palette — text */
+    --notro-gray:   #787774;
+    --notro-brown:  #9F6B53;
+    --notro-orange: #D9730D;
+    --notro-yellow: #CB912F;
+    --notro-green:  #448361;
+    --notro-blue:   #337EA9;
+    --notro-purple: #9065B0;
+    --notro-pink:   #C14C8A;
+    --notro-red:    #D44C47;
 
-  --notro-text:        rgb(55 53 47);
-  --notro-text-muted:  rgb(55 53 47 / 0.65);
-  --notro-text-subtle: rgb(55 53 47 / 0.45);
-  --notro-border:      rgb(55 53 47 / 0.09);
-  --notro-bg-subtle:   rgb(55 53 47 / 0.04);
-  --notro-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    /* Notion palette — background */
+    --notro-gray-bg:   #F1F1EF;
+    --notro-brown-bg:  #F4EEEE;
+    --notro-orange-bg: #FBECDD;
+    --notro-yellow-bg: #FBF3DB;
+    --notro-green-bg:  #EDF3EC;
+    --notro-blue-bg:   #E7F3F8;
+    --notro-purple-bg: #F6F3F9;
+    --notro-pink-bg:   #FAF1F5;
+    --notro-red-bg:    #FDEBEC;
+  }
 }
 
+/* ── Dark mode ───────────────────────────────────────────────────────────── */
 @media (prefers-color-scheme: dark) {
   :root {
     --nt-text-rgb: 226 232 240;
@@ -70,6 +77,7 @@
   }
 }
 
+/* ── Page layout utilities (nt-*) ────────────────────────────────────────── */
 @layer utilities {
   .nt-text    { color: rgb(var(--nt-text-rgb)); }
   .nt-text-60 { color: rgb(var(--nt-text-rgb) / 0.60); }
@@ -78,133 +86,49 @@
   .nt-bg-04   { background-color: rgb(var(--nt-text-rgb) / 0.04); }
 }
 
-/* ── Notion color classes ─────────────────────────────────────────────────── */
-.notro-text-gray   { color: var(--notro-gray); }
-.notro-text-brown  { color: var(--notro-brown); }
-.notro-text-orange { color: var(--notro-orange); }
-.notro-text-yellow { color: var(--notro-yellow); }
-.notro-text-green  { color: var(--notro-green); }
-.notro-text-blue   { color: var(--notro-blue); }
-.notro-text-purple { color: var(--notro-purple); }
-.notro-text-pink   { color: var(--notro-pink); }
-.notro-text-red    { color: var(--notro-red); }
-
-.notro-bg-gray   { background-color: var(--notro-gray-bg); }
-.notro-bg-brown  { background-color: var(--notro-brown-bg); }
-.notro-bg-orange { background-color: var(--notro-orange-bg); }
-.notro-bg-yellow { background-color: var(--notro-yellow-bg); }
-.notro-bg-green  { background-color: var(--notro-green-bg); }
-.notro-bg-blue   { background-color: var(--notro-blue-bg); }
-.notro-bg-purple { background-color: var(--notro-purple-bg); }
-.notro-bg-pink   { background-color: var(--notro-pink-bg); }
-.notro-bg-red    { background-color: var(--notro-red-bg); }
-
-/* ── TOC indent levels ───────────────────────────────────────────────────── */
-.notro-toc-level-1 { padding-left: 0; }
-.notro-toc-level-2 { padding-left: 1rem; }
-.notro-toc-level-3 { padding-left: 2rem; }
-.notro-toc-level-4 { padding-left: 3rem; }
-
-/* ── Task list ───────────────────────────────────────────────────────────── */
-.notro-markdown .contains-task-list {
-  list-style: none;
-  padding-left: 0;
-}
-.notro-markdown .task-list-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-}
-.notro-markdown .task-list-item input[type="checkbox"] {
-  margin-top: 0.25rem;
-  flex-shrink: 0;
-  cursor: default;
-}
-
-/* ── Toggle ──────────────────────────────────────────────────────────────── */
-@keyframes notro-toggle-fadein {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.notro-toggle > summary {
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-}
-.notro-toggle > summary::-webkit-details-marker { display: none; }
-.notro-toggle > summary::before {
-  content: "▶";
-  display: inline-block;
-  font-size: 0.6em;
-  margin-right: 0.5em;
-  transition: transform 200ms;
-  vertical-align: middle;
-  color: var(--notro-text-subtle);
-}
-.notro-toggle[open] > summary::before { transform: rotate(90deg); }
-.notro-toggle > :not(summary) { animation: notro-toggle-fadein 0.15s ease; }
-
-/* ── Table ───────────────────────────────────────────────────────────────── */
-.notro-table-wrapper .notro-table td,
-.notro-table-wrapper .notro-table th {
-  border: 1px solid var(--notro-border);
-  padding: 0.375rem 0.75rem;
-  text-align: left;
-  vertical-align: top;
-}
-.notro-table-wrapper .notro-table { border: 1px solid var(--notro-border); }
-.notro-table[data-header-row] tr:first-child td,
-.notro-table[data-header-row] tr:first-child th {
-  font-weight: 600;
-  background-color: var(--notro-bg-subtle);
-}
-.notro-table[data-header-col] td:first-child,
-.notro-table[data-header-col] th:first-child {
-  font-weight: 600;
-  background-color: var(--notro-bg-subtle);
-}
-
-/* ── Markdown content ────────────────────────────────────────────────────── */
-.notro-markdown pre {
-  border-radius: 0.375rem;
-  padding: 1rem 1.25rem;
-  overflow-x: auto;
-  font-size: 0.875rem;
-  line-height: 1.7;
-  margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
-}
-.notro-markdown pre > code {
-  font-family: var(--notro-font-mono);
-  background: transparent;
-  padding: 0;
-  color: inherit;
-  font-size: inherit;
-}
-.notro-markdown :not(pre) > code {
-  font-family: var(--notro-font-mono);
-  border-radius: 3px;
-  padding: 0.2em 0.4em;
-  font-size: 85%;
-  background-color: rgba(135, 131, 120, 0.15);
-  color: #eb5757;
-}
-@media (prefers-color-scheme: dark) {
-  .notro-markdown :not(pre) > code {
-    background-color: rgb(255 255 255 / 0.10);
-    color: #f87171;
+/* ── Markdown content (.notro-markdown) ──────────────────────────────────── */
+@layer components {
+  .notro-markdown pre {
+    @apply rounded-md py-4 px-5 overflow-x-auto text-sm leading-[1.7] my-5;
   }
-}
+  .notro-markdown pre > code {
+    @apply font-mono bg-transparent p-0 text-inherit;
+    font-size: inherit;
+  }
+  .notro-markdown :not(pre) > code {
+    @apply font-mono rounded-[3px] py-[0.2em] px-[0.4em] text-[85%];
+    background-color: rgba(135, 131, 120, 0.15);
+    color: #eb5757;
+  }
+  @media (prefers-color-scheme: dark) {
+    .notro-markdown :not(pre) > code {
+      background-color: rgb(255 255 255 / 0.10);
+      color: #f87171;
+    }
+  }
 
-/* ── TOC ─────────────────────────────────────────────────────────────────── */
-.notro-toc-list { list-style: none; margin: 0; padding: 0; }
-.notro-toc-item { line-height: 1.6; }
-.notro-toc-item a {
-  text-decoration: none;
-  font-size: 0.875rem;
-  color: var(--notro-text-muted);
-}
-.notro-toc-item a:hover {
-  text-decoration: underline;
-  color: var(--notro-blue);
+  /* Task list (remark-gfm output) */
+  .notro-markdown .contains-task-list {
+    @apply list-none pl-0;
+  }
+  .notro-markdown .task-list-item {
+    @apply flex items-start gap-2 pl-0;
+  }
+  .notro-markdown .task-list-item input[type="checkbox"] {
+    @apply mt-1 shrink-0 cursor-default;
+  }
+
+  /* Mermaid diagram wrapper (data-mermaid attribute injected by rehypeMermaid) */
+  [data-mermaid] {
+    @apply my-6 overflow-x-auto rounded-lg;
+  }
+  [data-mermaid] svg {
+    @apply block;
+  }
+
+  /* Toggle fade-in animation (used via animate-[notro-toggle-fadein_0.15s_ease] in Toggle.astro) */
+  @keyframes notro-toggle-fadein {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
 }

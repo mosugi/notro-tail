@@ -1,0 +1,22 @@
+---
+/**
+ * Notion file attachment block.
+ * Link color inherits from Starlight's .sl-markdown-content a.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'div'> & { src: string };
+
+const { src, class: className, ...rest } = Astro.props;
+---
+
+<div class:list={['notro-file-block', className]} data-slot="file-block" {...rest}>
+  <a href={src} target="_blank" rel="noopener noreferrer" data-slot="file-block-link">
+    <span aria-hidden="true" data-slot="file-block-icon">📎</span>
+    <slot />
+  </a>
+</div>
+
+<style>
+  .notro-file-block { margin-block: 0.5rem; }
+</style>

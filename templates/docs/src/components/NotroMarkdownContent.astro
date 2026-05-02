@@ -1,5 +1,6 @@
 ---
 import { NotroContent } from "notro-loader";
+import { notroComponents } from "./notro/index";
 
 // Astro.locals.starlightRoute is populated by Starlight's route middleware
 // and is available to all component overrides during rendering.
@@ -12,6 +13,6 @@ const markdown = route?.entry?.data?.markdown;
 ---
 
 {markdown
-  ? <NotroContent markdown={markdown} class="sl-markdown-content" />
+  ? <NotroContent markdown={markdown} class="sl-markdown-content" components={notroComponents} />
   : <div class="sl-markdown-content"><slot /></div>
 }

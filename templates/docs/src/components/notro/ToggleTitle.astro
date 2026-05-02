@@ -1,0 +1,15 @@
+---
+/**
+ * Toggle block title — renders as <summary> inside Toggle (<details>).
+ * Starlight's .sl-markdown-content summary CSS handles marker and open-state styling.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'summary'>;
+
+const { class: className, ...rest } = Astro.props;
+---
+
+<summary class={className} data-slot="toggle-title" {...rest}>
+  <slot />
+</summary>

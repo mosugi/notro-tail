@@ -6,6 +6,7 @@ export default defineConfig({
   site: "https://notrotail.mosugi.com",
   integrations: [
     starlight({
+      customCss: ["./src/styles/notro.css"],
       title: "notro",
       description: "Notion-to-Astro static site generator",
       logo: {

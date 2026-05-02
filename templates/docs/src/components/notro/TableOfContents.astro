@@ -1,0 +1,52 @@
+---
+/**
+ * Notion table of contents block — styled with Starlight design tokens.
+ * List items are injected by rehypeTocPlugin with data-toc-* attributes.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+
+type Props = Omit<HTMLAttributes<'nav'>, 'color'> & { color?: NotroColor };
+
+const { color: _color, class: className, ...rest } = Astro.props;
+---
+
+<nav class:list={['notro-toc', className]} aria-label="目次" data-slot="table-of-contents" {...rest}>
+  <p class="notro-toc__title" data-slot="table-of-contents-title">📋 目次</p>
+  <slot />
+</nav>
+
+<style>
+  .notro-toc {
+    margin-block: 1rem;
+    padding: 1rem;
+    border: 1px solid var(--sl-color-hairline);
+    background-color: var(--sl-color-bg-sidebar);
+    font-size: var(--sl-text-sm);
+  }
+  .notro-toc__title {
+    font-weight: 600;
+    font-size: var(--sl-text-sm);
+    color: var(--sl-color-gray-3);
+    margin-bottom: 0.5rem;
+  }
+  .notro-toc :global([data-toc-list]) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .notro-toc :global([data-toc-item]) { line-height: 1.75; }
+  .notro-toc :global([data-toc-level='1']) { padding-inline-start: 0; }
+  .notro-toc :global([data-toc-level='2']) { padding-inline-start: 1rem; }
+  .notro-toc :global([data-toc-level='3']) { padding-inline-start: 2rem; }
+  .notro-toc :global([data-toc-level='4']) { padding-inline-start: 3rem; }
+  .notro-toc :global([data-toc-link]) {
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    font-size: var(--sl-text-sm);
+  }
+  .notro-toc :global([data-toc-link]:hover) {
+    color: var(--sl-color-text-accent);
+    text-decoration: underline;
+  }
+</style>

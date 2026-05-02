@@ -1,0 +1,16 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import { tv, type VariantProps } from 'tailwind-variants';
+import { notroColorVariants } from './colors';
+
+export const tableRow = tv({
+  base: '',
+  variants: { color: notroColorVariants },
+  defaultVariants: { color: 'default' },
+});
+
+type Props = Omit<HTMLAttributes<'tr'>, 'color'> & VariantProps<typeof tableRow>;
+
+const { color, class: className, ...rest } = Astro.props;
+---
+<tr class={tableRow({ color, class: className })} data-slot="table-row" {...rest}><slot /></tr>

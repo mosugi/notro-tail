@@ -1,0 +1,19 @@
+---
+/**
+ * Notion database reference link.
+ * Inherits Starlight's link color from .sl-markdown-content a.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'a'> & {
+  url: string;
+  inline?: string;
+  icon?: string;
+};
+
+const { url, inline: _inline, icon = '🗄️', class: className, ...rest } = Astro.props;
+---
+<a href={url} class={className} data-slot="database-ref" {...rest}>
+  <span aria-hidden="true" data-slot="database-ref-icon">{icon}</span>
+  <slot />
+</a>

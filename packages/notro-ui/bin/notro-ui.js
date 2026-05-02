@@ -3,25 +3,24 @@
  * notro-ui CLI
  *
  * Usage:
- *   notro-ui init                              Initialize project (creates notro.json, copies theme.css)
- *   notro-ui add [components...] [--all] [-y]  Add components (skips existing files)
- *   notro-ui update [components...] [--all] [-y]  Update components (overwrites local changes)
- *   notro-ui remove [components...] [--all]    Remove components
+ *   notro-ui init                              Initialize project (creates notro.config.json + notro.css)
+ *   notro-ui add [components...] [-a|--all]    Add components (skips existing files)
+ *   notro-ui update [components...] [-a|--all] [-y|--yes]  Update outdated components
+ *   notro-ui remove [components...] [-a|--all] Remove components
  *   notro-ui list [--installed]                List available or installed components
  *
  * Examples:
  *   notro-ui init
  *   notro-ui add callout toggle
- *   notro-ui add --all
- *   notro-ui update callout --yes
- *   notro-ui update --all --yes
+ *   notro-ui add -a
+ *   notro-ui update -a --yes
  *   notro-ui remove callout
  *   notro-ui list
  *   notro-ui list --installed
  */
 
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve, relative } from 'node:path';
+import { dirname, join, resolve, relative, basename } from 'node:path';
 import {
   copyFileSync,
   mkdirSync,
@@ -30,10 +29,16 @@ import {
   writeFileSync,
   unlinkSync,
 } from 'node:fs';
+import { execSync } from 'node:child_process';
 import readline from 'node:readline';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = resolve(__dirname, '..', 'src', 'templates');
+
+// Read current package version — stamped onto each installed component entry.
+const CURRENT_VERSION = JSON.parse(
+  readFileSync(resolve(__dirname, '..', 'package.json'), 'utf8'),
+).version;
 
 // ── ANSI color helpers ────────────────────────────────────────────────────────
 
@@ -77,19 +82,19 @@ const COMPONENT_MAP = {
   quote:            ['Quote.astro'],
   styledspan:       ['StyledSpan.astro'],
   image:            ['ImageBlock.astro'],
-  table:            ['TableBlock.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableCell.astro'],
+  table:            ['TableBlock.astro', 'TableHead.astro', 'TableBody.astro', 'TableColgroup.astro', 'TableCol.astro', 'TableRow.astro', 'TableHeaderCell.astro', 'TableCell.astro'],
   coloredparagraph: ['ColoredParagraph.astro'],
   syncedblock:      ['SyncedBlock.astro'],
 };
 
-/** Core files always present — installed alongside components (not user-selectable). */
+/** Core files installed alongside components (not user-selectable). */
 const CORE_FILES = ['colors.ts', 'index.ts'];
 
 const COMPONENT_NAMES = Object.keys(COMPONENT_MAP);
 
-// ── Config (notro.json) ───────────────────────────────────────────────────────
+// ── Config (notro.config.json) ────────────────────────────────────────────────
 
-const CONFIG_FILE = 'notro.json';
+const CONFIG_FILE        = 'notro.config.json';
 const DEFAULT_OUT_DIR    = 'src/components/notro';
 const DEFAULT_STYLES_DIR = 'src/styles';
 
@@ -122,34 +127,218 @@ function requireConfig(cwd) {
   return cfg;
 }
 
+/** Find the installed entry for a component name, or null. */
+function findInstalled(cfg, name) {
+  return (cfg.components ?? []).find((c) => c.name === name) ?? null;
+}
+
+// ── Version comparison ────────────────────────────────────────────────────────
+
+/** Returns true if `installed` semver is strictly older than `current`. */
+function isOutdated(installed, current) {
+  const parse = (v) => String(v).split('.').map((n) => parseInt(n, 10) || 0);
+  const a = parse(installed);
+  const b = parse(current);
+  for (let i = 0; i < 3; i++) {
+    if ((a[i] ?? 0) < (b[i] ?? 0)) return true;
+    if ((a[i] ?? 0) > (b[i] ?? 0)) return false;
+  }
+  return false;
+}
+
+// ── Package manager detection ─────────────────────────────────────────────────
+
+/** Detect the active package manager via user-agent env or lock files. */
+function detectPackageManager(cwd) {
+  const ua = process.env.npm_config_user_agent ?? '';
+  if (ua.startsWith('pnpm')) return 'pnpm';
+  if (ua.startsWith('yarn')) return 'yarn';
+  if (ua.startsWith('bun'))  return 'bun';
+  if (ua.startsWith('npm'))  return 'npm';
+
+  if (existsSync(join(cwd, 'pnpm-lock.yaml'))) return 'pnpm';
+  if (existsSync(join(cwd, 'yarn.lock')))       return 'yarn';
+  if (existsSync(join(cwd, 'bun.lockb')))       return 'bun';
+  return 'npm';
+}
+
+/** Check if a package is already listed in package.json dependencies. */
+function isDepInstalled(pkg, cwd) {
+  try {
+    const pkgJson = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8'));
+    return !!(pkgJson.dependencies?.[pkg] || pkgJson.devDependencies?.[pkg]);
+  } catch {
+    return false;
+  }
+}
+
+/** Run `<pm> add <packages...>` in the given cwd. */
+function installDeps(packages, cwd) {
+  const pm  = detectPackageManager(cwd);
+  const sub = pm === 'npm' ? 'install' : 'add';
+  execSync(`${pm} ${sub} ${packages.join(' ')}`, { cwd, stdio: 'inherit' });
+}
+
+// ── CSS import injection ──────────────────────────────────────────────────────
+
+/**
+ * Inject `@import "<notro.css>"` into the project's main stylesheet, or fall
+ * back to adding a JS import in Layout.astro's frontmatter.
+ *
+ * Returns the path of the file that was modified, or null if already present.
+ */
+function injectCssImport(cssFile, cwd) {
+  const cssFilename = basename(cssFile);
+
+  // Look for a main stylesheet in the same styles directory
+  const stylesDir = dirname(cssFile);
+  for (const name of ['global.css', 'main.css', 'index.css', 'style.css']) {
+    const candidate = join(stylesDir, name);
+    if (!existsSync(candidate) || candidate === cssFile) continue;
+    const content    = readFileSync(candidate, 'utf8');
+    const importLine = `@import "./${cssFilename}";`;
+    if (content.includes(importLine)) return null; // already injected
+    writeFileSync(candidate, importLine + '\n' + content);
+    return candidate;
+  }
+
+  // Fall back: inject a JS import into Layout.astro frontmatter
+  for (const layoutRelPath of ['src/layouts/Layout.astro', 'src/layouts/BaseLayout.astro']) {
+    const layout = join(cwd, layoutRelPath);
+    if (!existsSync(layout)) continue;
+    const content    = readFileSync(layout, 'utf8');
+    const rel2css    = relative(dirname(layout), cssFile).replace(/\\/g, '/');
+    const importPath = rel2css.startsWith('.') ? rel2css : `./${rel2css}`;
+    const importLine = `import "${importPath}";`;
+    if (content.includes(importLine)) return null; // already injected
+    // Insert after the opening `---`
+    const updated = content.startsWith('---\n')
+      ? `---\n${importLine}\n` + content.slice(4)
+      : `---\n${importLine}\n---\n\n` + content;
+    writeFileSync(layout, updated);
+    return layout;
+  }
+
+  return null;
+}
+
+// ── notro.css template ────────────────────────────────────────────────────────
+
+const NOTRO_CSS = `/* notro-ui design tokens                                                    */
+/* Generated by \`notro-ui init\`. Import this file in your main stylesheet.  */
+/* Edit the --notro-* variables to retheme all Notion colors at once.         */
+
+@layer base {
+  :root {
+    /* Notion default text color (#37352f) */
+    --notro-text:        rgb(55 53 47);
+    --notro-text-muted:  rgb(55 53 47 / 0.65);
+    --notro-text-subtle: rgb(55 53 47 / 0.45);
+    --notro-border:      rgb(55 53 47 / 0.09);
+    --notro-bg-subtle:   rgb(55 53 47 / 0.04);
+
+    /* Notion palette — text */
+    --notro-gray:   #787774;
+    --notro-brown:  #9F6B53;
+    --notro-orange: #D9730D;
+    --notro-yellow: #CB912F;
+    --notro-green:  #448361;
+    --notro-blue:   #337EA9;
+    --notro-purple: #9065B0;
+    --notro-pink:   #C14C8A;
+    --notro-red:    #D44C47;
+
+    /* Notion palette — background */
+    --notro-gray-bg:   #F1F1EF;
+    --notro-brown-bg:  #F4EEEE;
+    --notro-orange-bg: #FBECDD;
+    --notro-yellow-bg: #FBF3DB;
+    --notro-green-bg:  #EDF3EC;
+    --notro-blue-bg:   #E7F3F8;
+    --notro-purple-bg: #F6F3F9;
+    --notro-pink-bg:   #FAF1F5;
+    --notro-red-bg:    #FDEBEC;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --notro-text:        rgb(226 232 240);
+    --notro-text-muted:  rgb(226 232 240 / 0.65);
+    --notro-text-subtle: rgb(226 232 240 / 0.45);
+    --notro-border:      rgb(226 232 240 / 0.09);
+    --notro-bg-subtle:   rgb(226 232 240 / 0.04);
+
+    --notro-gray:   #9b9b97;
+    --notro-brown:  #c49a82;
+    --notro-orange: #e88c4a;
+    --notro-yellow: #d9a84e;
+    --notro-green:  #6aad8a;
+    --notro-blue:   #5ba5cc;
+    --notro-purple: #b08fd0;
+    --notro-pink:   #d97ab3;
+    --notro-red:    #e07b78;
+
+    --notro-gray-bg:   #2d2d2b;
+    --notro-brown-bg:  #2e2320;
+    --notro-orange-bg: #2e2010;
+    --notro-yellow-bg: #2b2410;
+    --notro-green-bg:  #182b22;
+    --notro-blue-bg:   #142533;
+    --notro-purple-bg: #21192d;
+    --notro-pink-bg:   #2d1425;
+    --notro-red-bg:    #2d1314;
+  }
+}
+
+/* Toggle open/close animation */
+@keyframes notro-toggle-fadein {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Mermaid diagram wrapper (data-mermaid injected by rehypeMermaid) */
+[data-mermaid] {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  border-radius: 0.5rem;
+}
+[data-mermaid] svg {
+  display: block;
+}
+
+/* Color utilities — plain CSS fallback for projects without Tailwind.
+ * These selectors match the classes injected by rehypeNotionColorPlugin.
+ * Tailwind users can delete this section (Tailwind generates these rules). */
+.text-\\[var\\(--notro-gray\\)\\]   { color: var(--notro-gray); }
+.text-\\[var\\(--notro-brown\\)\\]  { color: var(--notro-brown); }
+.text-\\[var\\(--notro-orange\\)\\] { color: var(--notro-orange); }
+.text-\\[var\\(--notro-yellow\\)\\] { color: var(--notro-yellow); }
+.text-\\[var\\(--notro-green\\)\\]  { color: var(--notro-green); }
+.text-\\[var\\(--notro-blue\\)\\]   { color: var(--notro-blue); }
+.text-\\[var\\(--notro-purple\\)\\] { color: var(--notro-purple); }
+.text-\\[var\\(--notro-pink\\)\\]   { color: var(--notro-pink); }
+.text-\\[var\\(--notro-red\\)\\]    { color: var(--notro-red); }
+
+.bg-\\[var\\(--notro-gray-bg\\)\\]   { background-color: var(--notro-gray-bg); }
+.bg-\\[var\\(--notro-brown-bg\\)\\]  { background-color: var(--notro-brown-bg); }
+.bg-\\[var\\(--notro-orange-bg\\)\\] { background-color: var(--notro-orange-bg); }
+.bg-\\[var\\(--notro-yellow-bg\\)\\] { background-color: var(--notro-yellow-bg); }
+.bg-\\[var\\(--notro-green-bg\\)\\]  { background-color: var(--notro-green-bg); }
+.bg-\\[var\\(--notro-blue-bg\\)\\]   { background-color: var(--notro-blue-bg); }
+.bg-\\[var\\(--notro-purple-bg\\)\\] { background-color: var(--notro-purple-bg); }
+.bg-\\[var\\(--notro-pink-bg\\)\\]   { background-color: var(--notro-pink-bg); }
+.bg-\\[var\\(--notro-red-bg\\)\\]    { background-color: var(--notro-red-bg); }
+`;
+
 // ── File system helpers ───────────────────────────────────────────────────────
 
 function ensureDir(dir) {
-  if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true });
-  }
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
-/**
- * Copy a single template file to destDir.
- * @param {string} filename
- * @param {string} destDir
- * @param {'skip'|'overwrite'} strategy - 'skip' leaves existing files untouched
- * @returns {'added'|'updated'|'skipped'}
- */
-function copyTemplate(filename, destDir, strategy) {
-  const src  = join(TEMPLATES_DIR, filename);
-  const dest = join(destDir, filename);
-  if (existsSync(dest)) {
-    if (strategy === 'skip') return 'skipped';
-    copyFileSync(src, dest);
-    return 'updated';
-  }
-  copyFileSync(src, dest);
-  return 'added';
-}
-
-function displayPath(absPath, cwd) {
+function rel(absPath, cwd) {
   return relative(cwd, absPath);
 }
 
@@ -165,16 +354,16 @@ function confirm(message) {
   });
 }
 
-// ── Resolve component names → file lists ─────────────────────────────────────
+// ── Resolve / validate component names ───────────────────────────────────────
 
-function resolveFiles(names) {
+function resolveNames(names) {
   const unknown = names.filter((n) => !COMPONENT_MAP[n]);
   if (unknown.length > 0) {
     console.error(red(`Error: unknown component(s): ${unknown.join(', ')}`));
     console.error(gray(`  Run ${bold('notro-ui list')} to see available components.`));
     process.exit(1);
   }
-  return names.flatMap((n) => COMPONENT_MAP[n]);
+  return names;
 }
 
 // ── Commands ──────────────────────────────────────────────────────────────────
@@ -184,46 +373,46 @@ function initCommand() {
 
   console.log(`\n${bold('notro-ui init')}\n`);
 
-  // Write notro.json if it doesn't exist
+  // ① notro.config.json
   const cfgFile = configPath(cwd);
   if (existsSync(cfgFile)) {
-    console.log(yellow(`  ${CONFIG_FILE} already exists — skipping config creation.`));
+    console.log(yellow(`  ${CONFIG_FILE} already exists — skipping.`));
   } else {
-    const config = {
+    writeConfig(cwd, {
       outDir:     DEFAULT_OUT_DIR,
       stylesDir:  DEFAULT_STYLES_DIR,
       components: [],
-    };
-    writeConfig(cwd, config);
+    });
     console.log(green(`  Created  ${CONFIG_FILE}`));
   }
 
-  // Copy theme.css → src/styles/notro-theme.css (skip if already present)
-  const cfg       = readConfig(cwd);
+  // ② src/styles/notro.css
+  const cfg      = readConfig(cwd);
   const stylesDir = resolve(cwd, cfg?.stylesDir ?? DEFAULT_STYLES_DIR);
+  const cssFile   = join(stylesDir, 'notro.css');
+
   ensureDir(stylesDir);
-  const themeSrc  = join(TEMPLATES_DIR, 'theme.css');
-  const themeDest = join(stylesDir, 'notro-theme.css');
-  if (existsSync(themeDest)) {
-    console.log(gray(`  Skipped  ${displayPath(themeDest, cwd)}  (already exists)`));
+
+  let cssCreated = false;
+  if (existsSync(cssFile)) {
+    console.log(yellow(`  ${rel(cssFile, cwd)} already exists — skipping.`));
   } else {
-    copyFileSync(themeSrc, themeDest);
-    console.log(green(`  Added    ${displayPath(themeDest, cwd)}`));
+    writeFileSync(cssFile, NOTRO_CSS);
+    console.log(green(`  Created  ${rel(cssFile, cwd)}`));
+    cssCreated = true;
   }
 
-  console.log(`
-${bold('Next steps:')}
-  1. Add to your CSS (e.g. ${cyan('src/styles/global.css')}):
-       ${gray('@import "./notro-theme.css";')}
+  // ③ Inject @import into the main stylesheet (or Layout.astro as fallback)
+  const injected = injectCssImport(cssFile, cwd);
+  if (injected) {
+    console.log(green(`  Updated  ${rel(injected, cwd)}  ${gray('(added @import)')}`));
+  } else if (cssCreated) {
+    console.log(gray(`  Tip: import notro.css in your main stylesheet:`));
+    console.log(gray(`         @import "./${rel(cssFile, cwd)}";`));
+  }
 
-  2. Add components:
-       ${cyan('notro-ui add --all')}
-
-  3. Import in your page:
-       ${gray('import { NotroContent } from "notro-loader";')}
-       ${gray('import { notroComponents } from "@/components/notro";')}
-       ${gray('<NotroContent markdown={markdown} {linkToPages} components={notroComponents} />')}
-`);
+  console.log(`\n${gray('Next step:')}`);
+  console.log(gray(`  notro-ui add -a\n`));
 }
 
 async function addCommand(names, flags) {
@@ -231,54 +420,73 @@ async function addCommand(names, flags) {
   const cfg = requireConfig(cwd);
 
   const outDir = resolve(cwd, cfg.outDir ?? DEFAULT_OUT_DIR);
-  ensureDir(outDir);
-
   const useAll = flags.all;
-  const targets = useAll ? COMPONENT_NAMES : names;
+  const targets = useAll ? COMPONENT_NAMES : resolveNames(names);
 
   if (targets.length === 0) {
-    console.error(red('Error: specify component name(s) or use --all.'));
+    console.error(red('Error: specify component name(s) or use -a / --all.'));
     console.error(gray(`  Example: ${bold('notro-ui add callout toggle')}`));
-    console.error(gray(`           ${bold('notro-ui add --all')}`));
+    console.error(gray(`           ${bold('notro-ui add -a')}`));
     process.exit(1);
   }
 
-  const files = resolveFiles(targets);
-
   console.log(`\n${bold('notro-ui add')}\n`);
 
-  // Install core files (skip if present)
+  ensureDir(outDir);
+
+  // Always keep core files up to date
   for (const f of CORE_FILES) {
-    const result = copyTemplate(f, outDir, 'skip');
-    const dest   = displayPath(join(outDir, f), cwd);
-    if (result === 'skipped') {
-      console.log(gray(`  Skipped  ${dest}  (already exists)`));
-    } else {
-      console.log(green(`  Added    ${dest}`));
+    const dest = join(outDir, f);
+    if (!existsSync(dest)) {
+      copyFileSync(join(TEMPLATES_DIR, f), dest);
+      console.log(green(`  Added    ${rel(dest, cwd)}`));
     }
   }
 
-  // Install component files (skip if present)
   let addedCount   = 0;
   let skippedCount = 0;
-  for (const f of files) {
-    const result = copyTemplate(f, outDir, 'skip');
-    const dest   = displayPath(join(outDir, f), cwd);
-    if (result === 'skipped') {
-      console.log(gray(`  Skipped  ${dest}  (already exists)`));
-      skippedCount++;
-    } else {
-      console.log(green(`  Added    ${dest}`));
-      addedCount++;
+
+  for (const name of targets) {
+    let anyAdded = false;
+    for (const f of COMPONENT_MAP[name]) {
+      const dest = join(outDir, f);
+      if (existsSync(dest)) {
+        skippedCount++;
+      } else {
+        copyFileSync(join(TEMPLATES_DIR, f), dest);
+        console.log(green(`  Added    ${rel(dest, cwd)}`));
+        anyAdded = true;
+        addedCount++;
+      }
+    }
+
+    // Record in config with version stamp
+    const entry = findInstalled(cfg, name);
+    if (!entry) {
+      cfg.components = [...(cfg.components ?? []), { name, version: CURRENT_VERSION }];
+    } else if (anyAdded) {
+      entry.version = CURRENT_VERSION;
     }
   }
 
-  // Update notro.json components list (add new entries)
-  const existing = new Set(cfg.components ?? []);
-  for (const name of targets) existing.add(name);
-  cfg.components = [...existing].sort();
+  if (skippedCount > 0) {
+    console.log(gray(`\n  ${skippedCount} file(s) already exist — use ${bold('notro-ui update')} to overwrite.`));
+  }
+
   writeConfig(cwd, cfg);
   console.log(green(`  Updated  ${CONFIG_FILE}`));
+
+  // Install tailwind-variants if not already present
+  if (addedCount > 0 && !isDepInstalled('tailwind-variants', cwd)) {
+    const pm = detectPackageManager(cwd);
+    console.log(`\n  Installing ${bold('tailwind-variants')} via ${pm}...`);
+    try {
+      installDeps(['tailwind-variants'], cwd);
+    } catch {
+      console.log(yellow(`  Warning: failed to install tailwind-variants automatically.`));
+      console.log(yellow(`  Run manually: ${bold(`${pm} ${pm === 'npm' ? 'install' : 'add'} tailwind-variants`)}`));
+    }
+  }
 
   console.log(`\n${green('Done!')}  ${addedCount} added, ${skippedCount} skipped.\n`);
 }
@@ -293,29 +501,52 @@ async function updateCommand(names, flags) {
 
   let targets;
   if (useAll) {
-    targets = cfg.components ?? [];
+    targets = (cfg.components ?? []).map((c) => c.name);
     if (targets.length === 0) {
-      console.error(yellow('No components installed yet. Run notro-ui add --all first.'));
+      console.log(yellow('\n  No components installed. Run notro-ui add -a first.\n'));
       process.exit(0);
     }
   } else {
-    targets = names;
+    targets = resolveNames(names);
     if (targets.length === 0) {
-      console.error(red('Error: specify component name(s) or use --all.'));
+      console.error(red('Error: specify component name(s) or use -a / --all.'));
       console.error(gray(`  Example: ${bold('notro-ui update callout')}`));
-      console.error(gray(`           ${bold('notro-ui update --all --yes')}`));
+      console.error(gray(`           ${bold('notro-ui update -a --yes')}`));
       process.exit(1);
     }
   }
 
-  const files = resolveFiles(targets);
+  // Partition into outdated vs already current
+  const outdated = targets.filter((name) => {
+    const entry = findInstalled(cfg, name);
+    return !entry || isOutdated(entry.version, CURRENT_VERSION);
+  });
+  const current = targets.filter((n) => !outdated.includes(n));
 
   console.log(`\n${bold('notro-ui update')}\n`);
-  console.log(yellow('  Warning: this will overwrite your local changes to these components.'));
-  console.log(gray(`  Components: ${targets.join(', ')}\n`));
+
+  if (current.length > 0) {
+    console.log(gray(`  Up-to-date: ${current.join(', ')}`));
+  }
+
+  if (outdated.length === 0) {
+    console.log(green('\n  All components are up-to-date.\n'));
+    process.exit(0);
+  }
+
+  const oldVersions = Object.fromEntries(
+    outdated.map((n) => [n, findInstalled(cfg, n)?.version ?? '—']),
+  );
+
+  console.log(yellow(`  Outdated (${outdated.length}):`));
+  for (const name of outdated) {
+    console.log(yellow(`    ${name.padEnd(20)} v${oldVersions[name]} → v${CURRENT_VERSION}`));
+  }
+  console.log();
+  console.log(yellow('  Warning: this will overwrite your local changes to these files.'));
 
   if (!useYes) {
-    const ok = await confirm('  Continue?');
+    const ok = await confirm('\n  Continue?');
     if (!ok) {
       console.log(gray('\n  Aborted.\n'));
       process.exit(0);
@@ -323,21 +554,35 @@ async function updateCommand(names, flags) {
     console.log();
   }
 
-  // Update core files
+  // Always refresh core files
   for (const f of CORE_FILES) {
-    const result = copyTemplate(f, outDir, 'overwrite');
-    const dest   = displayPath(join(outDir, f), cwd);
-    console.log(green(`  Updated  ${dest}`));
+    const dest = join(outDir, f);
+    ensureDir(outDir);
+    copyFileSync(join(TEMPLATES_DIR, f), dest);
+    console.log(green(`  Updated  ${rel(dest, cwd)}`));
   }
 
-  // Update component files
   let updatedCount = 0;
-  for (const f of files) {
-    const result = copyTemplate(f, outDir, 'overwrite');
-    const dest   = displayPath(join(outDir, f), cwd);
-    console.log(green(`  Updated  ${dest}`));
-    updatedCount++;
+  for (const name of outdated) {
+    for (const f of COMPONENT_MAP[name]) {
+      const dest = join(outDir, f);
+      ensureDir(outDir);
+      copyFileSync(join(TEMPLATES_DIR, f), dest);
+      console.log(green(`  Updated  ${rel(dest, cwd)}`));
+      updatedCount++;
+    }
+
+    // Bump version in config
+    const entry = findInstalled(cfg, name);
+    if (entry) {
+      entry.version = CURRENT_VERSION;
+    } else {
+      cfg.components = [...(cfg.components ?? []), { name, version: CURRENT_VERSION }];
+    }
   }
+
+  writeConfig(cwd, cfg);
+  console.log(green(`  Updated  ${CONFIG_FILE}`));
 
   console.log(`\n${green('Done!')}  ${updatedCount} file(s) updated.\n`);
 }
@@ -349,15 +594,14 @@ function removeCommand(names, flags) {
   const outDir = resolve(cwd, cfg.outDir ?? DEFAULT_OUT_DIR);
   const useAll = flags.all;
 
-  const targets = useAll ? (cfg.components ?? []) : names;
+  const targets = useAll
+    ? (cfg.components ?? []).map((c) => c.name)
+    : resolveNames(names);
 
   if (targets.length === 0) {
-    console.error(red('Error: specify component name(s) or use --all.'));
+    console.error(red('Error: specify component name(s) or use -a / --all.'));
     process.exit(1);
   }
-
-  // Validate names first
-  resolveFiles(targets);
 
   console.log(`\n${bold('notro-ui remove')}\n`);
 
@@ -367,16 +611,15 @@ function removeCommand(names, flags) {
       const dest = join(outDir, f);
       if (existsSync(dest)) {
         unlinkSync(dest);
-        console.log(green(`  Removed  ${displayPath(dest, cwd)}`));
+        console.log(green(`  Removed  ${rel(dest, cwd)}`));
         removedCount++;
       } else {
-        console.log(gray(`  Missing  ${displayPath(dest, cwd)}  (already removed)`));
+        console.log(gray(`  Missing  ${rel(dest, cwd)}`));
       }
     }
   }
 
-  // Update notro.json
-  cfg.components = (cfg.components ?? []).filter((n) => !targets.includes(n));
+  cfg.components = (cfg.components ?? []).filter((c) => !targets.includes(c.name));
   writeConfig(cwd, cfg);
   console.log(green(`  Updated  ${CONFIG_FILE}`));
 
@@ -387,20 +630,24 @@ function listCommand(flags) {
   const cwd = process.cwd();
 
   if (flags.installed) {
-    const cfg = readConfig(cwd);
+    const cfg       = readConfig(cwd);
     const installed = cfg?.components ?? [];
     if (installed.length === 0) {
-      console.log(gray('\n  No components installed. Run notro-ui add --all to get started.\n'));
+      console.log(gray('\n  No components installed. Run notro-ui add -a to get started.\n'));
       return;
     }
-    console.log(`\n${bold('Installed components:')}\n`);
-    for (const name of installed) {
-      const files = COMPONENT_MAP[name] ?? [];
-      console.log(`  ${green(name.padEnd(20))} ${gray(files.join(', '))}`);
+    console.log(`\n${bold('Installed components:')}  ${gray(`(notro-ui v${CURRENT_VERSION})`)}\n`);
+    for (const { name, version } of installed) {
+      const files      = COMPONENT_MAP[name] ?? [];
+      const outdated   = isOutdated(version, CURRENT_VERSION);
+      const versionStr = outdated
+        ? yellow(`v${version} → v${CURRENT_VERSION}`)
+        : gray(`v${version}`);
+      console.log(`  ${cyan(name.padEnd(20))} ${versionStr.padEnd(50)} ${gray(files.join(', '))}`);
     }
     console.log();
   } else {
-    console.log(`\n${bold('Available components:')}\n`);
+    console.log(`\n${bold('Available components:')}  ${gray(`(notro-ui v${CURRENT_VERSION})`)}\n`);
     for (const [name, files] of Object.entries(COMPONENT_MAP)) {
       console.log(`  ${cyan(name.padEnd(20))} ${gray(files.join(', '))}`);
     }
@@ -410,24 +657,24 @@ function listCommand(flags) {
 
 function printHelp() {
   console.log(`
-${bold('notro-ui')} — Notion block component installer
+${bold('notro-ui')} — Notion block component installer  ${gray(`v${CURRENT_VERSION}`)}
 
 ${bold('Usage:')}
-  notro-ui ${cyan('init')}                               Initialize project (creates notro.json)
-  notro-ui ${cyan('add')} [components...] [--all] [-y]   Add components ${gray('(skips existing)')}
-  notro-ui ${cyan('update')} [components...] [--all] [-y] Update components ${yellow('(overwrites local changes)')}
-  notro-ui ${cyan('remove')} [components...] [--all]     Remove components
-  notro-ui ${cyan('list')} [--installed]                 List available or installed components
+  notro-ui ${cyan('init')}                               Initialize project
+  notro-ui ${cyan('add')} [components...] [-a|--all]     Add components ${gray('(skips existing)')}
+  notro-ui ${cyan('update')} [components...] [-a|--all]  Update outdated components
+  notro-ui ${cyan('remove')} [components...] [-a|--all]  Remove components
+  notro-ui ${cyan('list')} [--installed]                 List available / installed components
 
 ${bold('Options:')}
   -a, --all     Target all components
-  -y, --yes     Skip confirmation prompts
+  -y, --yes     Skip confirmation prompt
 
 ${bold('Examples:')}
   notro-ui init
   notro-ui add callout toggle
-  notro-ui add --all
-  notro-ui update --all --yes
+  notro-ui add -a
+  notro-ui update -a --yes
   notro-ui remove callout
   notro-ui list
   notro-ui list --installed
@@ -440,10 +687,10 @@ function parseArgs(argv) {
   const flags = { all: false, yes: false, installed: false };
   const names = [];
   for (const arg of argv) {
-    if (arg === '--all' || arg === '-a')       flags.all       = true;
-    else if (arg === '--yes' || arg === '-y')  flags.yes       = true;
-    else if (arg === '--installed')            flags.installed = true;
-    else if (!arg.startsWith('-'))             names.push(arg.toLowerCase());
+    if (arg === '--all' || arg === '-a')      flags.all       = true;
+    else if (arg === '--yes' || arg === '-y') flags.yes       = true;
+    else if (arg === '--installed')           flags.installed = true;
+    else if (!arg.startsWith('-'))            names.push(arg.toLowerCase());
   }
   return { flags, names };
 }
