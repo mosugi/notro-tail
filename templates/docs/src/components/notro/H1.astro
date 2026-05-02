@@ -1,0 +1,11 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'h1'>, 'color'> & { color?: NotroColor };
+
+const { color = 'default', class: className, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+---
+<h1 class:list={[colorClass, className]} data-slot="h1" {...rest}><slot /></h1>

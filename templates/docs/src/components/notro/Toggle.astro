@@ -1,0 +1,16 @@
+---
+/**
+ * Notion toggle (collapsible) block — renders as <details>.
+ * Starlight's .sl-markdown-content details CSS handles all visual styling.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+
+type Props = Omit<HTMLAttributes<'details'>, 'color'> & { color?: NotroColor };
+
+const { color: _color, class: className, ...rest } = Astro.props;
+---
+
+<details class={className} data-slot="toggle" {...rest}>
+  <slot />
+</details>

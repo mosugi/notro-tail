@@ -1,0 +1,62 @@
+---
+/**
+ * Notion callout block — styled after Starlight's aside design.
+ * Maps Notion colors to Starlight's --sl-color-* semantic tokens.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+
+type Props = Omit<HTMLAttributes<'div'>, 'color'> & {
+  icon?: string;
+  color?: NotroColor;
+};
+
+const { icon, color = 'default', class: className, ...rest } = Astro.props;
+
+const slColor = (() => {
+  const c = String(color).replace(/_bg$|_background$/, '');
+  if (['blue'].includes(c)) return 'blue';
+  if (['green'].includes(c)) return 'green';
+  if (['orange', 'yellow', 'brown'].includes(c)) return 'orange';
+  if (['red', 'pink'].includes(c)) return 'red';
+  if (['purple'].includes(c)) return 'purple';
+  return 'default';
+})();
+---
+
+<div class:list={['notro-callout', `notro-callout--${slColor}`, className]} data-slot="callout" {...rest}>
+  {icon && <span class="notro-callout__icon" aria-hidden="true" data-slot="callout-icon">{icon}</span>}
+  <div class="notro-callout__content" data-slot="callout-content">
+    <slot />
+  </div>
+</div>
+
+<style>
+  .notro-callout {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-block: 1rem;
+    padding: 1rem;
+    border-inline-start: 0.25rem solid var(--notro-callout-border, var(--sl-color-gray-4));
+    background-color: var(--notro-callout-bg, var(--sl-color-bg-sidebar));
+    color: var(--sl-color-white);
+  }
+  .notro-callout__icon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .notro-callout__content {
+    min-width: 0;
+    flex: 1;
+  }
+  .notro-callout__content :global(> :first-child) { margin-top: 0; }
+  .notro-callout__content :global(> :last-child)  { margin-bottom: 0; }
+
+  .notro-callout--blue   { --notro-callout-border: var(--sl-color-blue);   --notro-callout-bg: var(--sl-color-blue-low); }
+  .notro-callout--green  { --notro-callout-border: var(--sl-color-green);  --notro-callout-bg: var(--sl-color-green-low); }
+  .notro-callout--orange { --notro-callout-border: var(--sl-color-orange); --notro-callout-bg: var(--sl-color-orange-low); }
+  .notro-callout--red    { --notro-callout-border: var(--sl-color-red);    --notro-callout-bg: var(--sl-color-red-low); }
+  .notro-callout--purple { --notro-callout-border: var(--sl-color-purple); --notro-callout-bg: var(--sl-color-purple-low); }
+</style>

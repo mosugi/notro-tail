@@ -1,0 +1,53 @@
+---
+/**
+ * Notion table block.
+ * Starlight's .sl-markdown-content table CSS handles base styling.
+ * data-header-row / data-header-col drive first-row/col visual emphasis via <style>.
+ */
+import type { HTMLAttributes } from 'astro/types';
+
+type Props = HTMLAttributes<'table'> & {
+  'fit-page-width'?: string;
+  'header-row'?: string;
+  'header-column'?: string;
+  tableWrapperClass?: string;
+};
+
+const {
+  'fit-page-width': _fitPageWidth,
+  'header-row': headerRow = 'false',
+  'header-column': headerColumn = 'false',
+  class: className,
+  tableWrapperClass,
+  ...rest
+} = Astro.props;
+---
+
+<div class:list={['notro-table-wrapper', tableWrapperClass]} data-slot="table-wrapper">
+  <table
+    class:list={['notro-table', className]}
+    data-slot="table"
+    data-header-row={headerRow === 'true' ? '' : undefined}
+    data-header-col={headerColumn === 'true' ? '' : undefined}
+    {...rest}
+  >
+    <slot />
+  </table>
+</div>
+
+<style>
+  .notro-table-wrapper { overflow-x: auto; }
+
+  /* header-row: style first row's td cells as headers */
+  .notro-table[data-header-row] :global(tr:first-child td) {
+    font-weight: 600;
+    background-color: var(--sl-color-bg-sidebar);
+    color: var(--sl-color-white);
+  }
+  /* header-col: style first column's td cells as headers */
+  .notro-table[data-header-col] :global(tr td:first-child) {
+    font-weight: 600;
+    background-color: var(--sl-color-bg-sidebar);
+    color: var(--sl-color-white);
+  }
+</style>

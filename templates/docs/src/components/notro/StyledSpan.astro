@@ -1,0 +1,35 @@
+---
+/**
+ * Inline styled span — handles Notion text colors, underline, and Shiki syntax colors.
+ * Color classes are resolved by notro.css escaped selectors (no TailwindCSS needed).
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'span'>, 'style' | 'color'> & {
+  color?: NotroColor;
+  underline?: string;
+  style?: string | Record<string, string>;
+};
+
+const { color = 'default', underline, class: className, style: styleProp, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+
+// styleProp may be a React-style object from Shiki or a CSS string.
+const styleObj: Record<string, string> =
+  typeof styleProp === 'object' && styleProp !== null
+    ? { ...(styleProp as Record<string, string>) }
+    : typeof styleProp === 'string' && styleProp
+      ? Object.fromEntries(
+          styleProp
+            .split(';')
+            .filter(Boolean)
+            .map((p) => p.split(':').map((s) => s.trim()) as [string, string]),
+        )
+      : {};
+if (underline === 'true') styleObj['text-decoration'] = 'underline';
+const style = Object.keys(styleObj).length > 0 ? styleObj : undefined;
+---
+
+<span class:list={[colorClass, className]} style={style} data-slot="styled-span" {...rest}><slot /></span>

@@ -1,0 +1,19 @@
+---
+/**
+ * Paragraph element with optional Notion block-level color support.
+ *
+ * Notion emits block-level color annotations as raw HTML:
+ *   <p color="gray_bg">...</p>
+ * This component applies the corresponding CSS class from notroColorVariants.
+ * Starlight handles base paragraph styling via .sl-markdown-content.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'p'>, 'color'> & { color?: NotroColor };
+
+const { color = 'default', class: className, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+---
+<p class:list={[colorClass, className]} data-slot="colored-paragraph" {...rest}><slot /></p>

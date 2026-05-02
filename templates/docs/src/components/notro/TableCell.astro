@@ -1,0 +1,15 @@
+---
+/**
+ * Starlight's .sl-markdown-content td CSS handles base styling (border, padding).
+ * header-row/col visual differentiation is handled by TableBlock's <style> block.
+ */
+import type { HTMLAttributes } from 'astro/types';
+import type { NotroColor } from './colors';
+import { notroColorVariants } from './colors';
+
+type Props = Omit<HTMLAttributes<'td'>, 'color'> & { color?: NotroColor };
+
+const { color = 'default', class: className, ...rest } = Astro.props;
+const colorClass = notroColorVariants[color] || '';
+---
+<td class:list={[colorClass, className]} data-slot="table-cell" {...rest}><slot /></td>
