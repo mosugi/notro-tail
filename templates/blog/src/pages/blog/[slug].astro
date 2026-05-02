@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
-import { buildLinkToPages, getPlainText, hasTag, NotroContent } from "notro-loader";
+import { NotroContent } from "notro-loader";
+import { buildLinkToPages, getPlainText, hasTag } from "notro-loader/utils";
 import Layout from "../../layouts/Layout.astro";
 import { notroComponents } from "../../components/notro";
 import config from "../../config";
@@ -8,22 +9,24 @@ import {
   getSortedBlogPosts,
   getAdjacentPosts,
   getPublicTags,
+  buildSlugMap,
 } from "../../lib/blog.ts";
 
 export async function getStaticPaths() {
   const posts = await getCollection("posts");
+  const slugMap = buildSlugMap(posts);
 
   // Build linkToPages map so NotroContent can resolve inter-page links
   const linkToPages = buildLinkToPages(posts, {
-    url: (e) => `blog/${getPlainText(e.data.properties.Slug) || e.id}/`,
+    url: (e) => `blog/${slugMap.get(e.id) ?? (getPlainText(e.data.properties.Slug) || e.id)}/`,
     title: (e) => getPlainText(e.data.properties.Name) ?? e.id,
   });
 
   const blogPosts = getSortedBlogPosts(posts);
 
   return posts.map((entry) => {
-    const slug = getPlainText(entry.data.properties.Slug) || entry.id;
-    const { prevNav, nextNav } = getAdjacentPosts(blogPosts, entry.id);
+    const slug = slugMap.get(entry.id)!;
+    const { prevNav, nextNav } = getAdjacentPosts(blogPosts, entry.id, slugMap);
     return {
       params: { slug },
       props: { entry, linkToPages, prevNav, nextNav },

@@ -16,10 +16,42 @@ export function getSortedBlogPosts(posts: PostEntry[]): PostEntry[] {
     });
 }
 
+/**
+ * Builds a map from post entry ID to deduplicated slug.
+ * When multiple posts share the same Slug value, later posts (by array order)
+ * receive a numeric suffix (-2, -3, ...). Logs a warning for each duplicate found.
+ */
+export function buildSlugMap(posts: PostEntry[]): Map<string, string> {
+  const slugCounts = new Map<string, number>();
+  const result = new Map<string, string>();
+
+  for (const entry of posts) {
+    const rawSlug = getPlainText(entry.data.properties.Slug) || entry.id;
+    const count = slugCounts.get(rawSlug) ?? 0;
+    slugCounts.set(rawSlug, count + 1);
+
+    if (count > 0) {
+      const deduped = `${rawSlug}-${count + 1}`;
+      console.warn(
+        `[notro] Duplicate slug "${rawSlug}" (page ${entry.id}). ` +
+          `Using "${deduped}". Set a unique Slug in Notion to fix this.`,
+      );
+      result.set(entry.id, deduped);
+    } else {
+      result.set(entry.id, rawSlug);
+    }
+  }
+
+  return result;
+}
+
 /** Converts a post entry to a minimal nav object { slug, title }. */
-export function toNavEntry(entry: PostEntry): { slug: string; title: string } {
+export function toNavEntry(
+  entry: PostEntry,
+  slugMap?: Map<string, string>,
+): { slug: string; title: string } {
   return {
-    slug: getPlainText(entry.data.properties.Slug) || entry.id,
+    slug: slugMap?.get(entry.id) ?? (getPlainText(entry.data.properties.Slug) || entry.id),
     title: getPlainText(entry.data.properties.Name) ?? entry.id,
   };
 }
@@ -31,16 +63,17 @@ export function toNavEntry(entry: PostEntry): { slug: string; title: string } {
 export function getAdjacentPosts(
   sortedPosts: PostEntry[],
   currentId: string,
+  slugMap?: Map<string, string>,
 ): {
   prevNav: { slug: string; title: string } | undefined;
   nextNav: { slug: string; title: string } | undefined;
 } {
   const idx = sortedPosts.findIndex((p) => p.id === currentId);
   return {
-    prevNav: idx > 0 ? toNavEntry(sortedPosts[idx - 1]!) : undefined,
+    prevNav: idx > 0 ? toNavEntry(sortedPosts[idx - 1]!, slugMap) : undefined,
     nextNav:
       idx >= 0 && idx < sortedPosts.length - 1
-        ? toNavEntry(sortedPosts[idx + 1]!)
+        ? toNavEntry(sortedPosts[idx + 1]!, slugMap)
         : undefined,
   };
 }

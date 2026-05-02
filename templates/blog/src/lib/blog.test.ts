@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   getSortedBlogPosts,
+  buildSlugMap,
   toNavEntry,
   getAdjacentPosts,
   getPublicTags,
@@ -71,6 +72,53 @@ describe("getSortedBlogPosts", () => {
 });
 
 // ─────────────────────────────────────────────
+// buildSlugMap
+// ─────────────────────────────────────────────
+describe("buildSlugMap", () => {
+  it("assigns each entry its raw slug when no duplicates", () => {
+    const posts = [
+      makeEntry({ id: "a", slug: "alpha" }),
+      makeEntry({ id: "b", slug: "beta" }),
+    ];
+    const map = buildSlugMap(posts);
+    expect(map.get("a")).toBe("alpha");
+    expect(map.get("b")).toBe("beta");
+  });
+
+  it("falls back to entry.id when Slug is empty", () => {
+    const posts = [makeEntry({ id: "no-slug" })];
+    const map = buildSlugMap(posts);
+    expect(map.get("no-slug")).toBe("no-slug");
+  });
+
+  it("appends -2, -3 for duplicate slugs in order", () => {
+    const posts = [
+      makeEntry({ id: "first", slug: "same" }),
+      makeEntry({ id: "second", slug: "same" }),
+      makeEntry({ id: "third", slug: "same" }),
+    ];
+    const map = buildSlugMap(posts);
+    expect(map.get("first")).toBe("same");
+    expect(map.get("second")).toBe("same-2");
+    expect(map.get("third")).toBe("same-3");
+  });
+
+  it("deduplicates independently for each unique base slug", () => {
+    const posts = [
+      makeEntry({ id: "a1", slug: "a" }),
+      makeEntry({ id: "b1", slug: "b" }),
+      makeEntry({ id: "a2", slug: "a" }),
+      makeEntry({ id: "b2", slug: "b" }),
+    ];
+    const map = buildSlugMap(posts);
+    expect(map.get("a1")).toBe("a");
+    expect(map.get("b1")).toBe("b");
+    expect(map.get("a2")).toBe("a-2");
+    expect(map.get("b2")).toBe("b-2");
+  });
+});
+
+// ─────────────────────────────────────────────
 // toNavEntry
 // ─────────────────────────────────────────────
 describe("toNavEntry", () => {
@@ -87,6 +135,12 @@ describe("toNavEntry", () => {
   it("falls back to entry.id when Name is empty", () => {
     const entry = makeEntry({ id: "id-only", slug: "s" });
     expect(toNavEntry(entry)).toEqual({ slug: "s", title: "id-only" });
+  });
+
+  it("uses slugMap value when provided", () => {
+    const entry = makeEntry({ id: "p1", slug: "original", name: "Post" });
+    const slugMap = new Map([["p1", "original-2"]]);
+    expect(toNavEntry(entry, slugMap)).toEqual({ slug: "original-2", title: "Post" });
   });
 });
 
@@ -122,6 +176,16 @@ describe("getAdjacentPosts", () => {
     const { prevNav, nextNav } = getAdjacentPosts(posts, "nonexistent");
     expect(prevNav).toBeUndefined();
     expect(nextNav).toBeUndefined();
+  });
+
+  it("uses slugMap values for adjacent post slugs", () => {
+    const slugMap = new Map([
+      ["newest", "newest-2"],
+      ["middle", "middle"],
+      ["oldest", "oldest"],
+    ]);
+    const { prevNav } = getAdjacentPosts(posts, "middle", slugMap);
+    expect(prevNav?.slug).toBe("newest-2");
   });
 });
 

@@ -1,7 +1,7 @@
 import rss from "@astrojs/rss";
 import type { APIContext } from "astro";
 import { getCollection } from "astro:content";
-import { getPlainText, hasTag } from "notro-loader";
+import { getPlainText, hasTag } from "notro-loader/utils";
 import config from "../config";
 
 export async function GET(context: APIContext) {
