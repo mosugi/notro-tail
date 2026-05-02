@@ -10,17 +10,20 @@ interface Props {
 const { cover, alt, class: className } = Astro.props;
 
 const imageUrl = cover?.type === "file" ? cover?.file.url : cover?.external?.url;
+
+// S3 presigned URLs (Notion file-type covers) expire after ~1 hour.
+// Use inferSize to download and cache the image at build time.
+const isS3Url = imageUrl ? (imageUrl.includes("X-Amz-") || imageUrl.includes("prod-files-secure.s3")) : false;
 ---
 
 {
   imageUrl ? (
     <div class:list={["nt-collection-cover", className]}>
-      <Image
-        src={imageUrl}
-        alt={alt ?? ""}
-        width={1200}
-        height={630}
-      />
+      {isS3Url ? (
+        <Image src={imageUrl} inferSize alt={alt ?? ""} />
+      ) : (
+        <Image src={imageUrl} alt={alt ?? ""} width={1200} height={630} />
+      )}
     </div>
   ) : null
 }

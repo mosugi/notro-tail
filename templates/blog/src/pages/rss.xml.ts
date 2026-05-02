@@ -3,9 +3,11 @@ import type { APIContext } from "astro";
 import { getCollection } from "astro:content";
 import { getPlainText, hasTag } from "notro-loader/utils";
 import config from "../config";
+import { buildSlugMap } from "../lib/blog";
 
 export async function GET(context: APIContext) {
   const posts = await getCollection("posts");
+  const slugMap = buildSlugMap(posts);
 
   // Exclude fixed pages; sort by date descending
   const blogPosts = posts
@@ -21,7 +23,7 @@ export async function GET(context: APIContext) {
     description: config.site.description,
     site: context.site ?? context.url.origin,
     items: blogPosts.map((entry) => {
-      const slug = getPlainText(entry.data.properties.Slug) || entry.id;
+      const slug = slugMap.get(entry.id) ?? (getPlainText(entry.data.properties.Slug) || entry.id);
       const title = getPlainText(entry.data.properties.Name) ?? entry.id;
       const description = getPlainText(entry.data.properties.Description);
       const pubDate = entry.data.properties.Date.date?.start

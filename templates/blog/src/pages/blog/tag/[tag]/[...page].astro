@@ -6,7 +6,7 @@ import BlogList from "../../../../components/blog/BlogList.astro";
 import Layout from "../../../../layouts/Layout.astro";
 import Pagination from "../../../../components/blog/Pagination.astro";
 import config from "../../../../config";
-import { getAllPublicTags } from "../../../../lib/blog.ts";
+import { getAllPublicTags, buildSlugMap } from "../../../../lib/blog.ts";
 
 export async function getStaticPaths({
   paginate,
@@ -30,6 +30,10 @@ export async function getStaticPaths({
 const { page } = Astro.props;
 const { tag } = Astro.params;
 
+// Build slug map from all posts to handle duplicate slugs (getCollection is cached by Astro)
+const allPostsForSlug = await getCollection("posts");
+const slugMap = buildSlugMap(allPostsForSlug);
+
 const data = page.data.map(({ data }) => data);
 ---
 
@@ -41,7 +45,7 @@ const data = page.data.map(({ data }) => data);
       </a>
       <h1 class="text-3xl font-bold text-gray-900">タグ: {tag}</h1>
     </div>
-    <BlogList posts={data} />
+    <BlogList posts={data} slugMap={slugMap} />
     <Pagination
       currentPage={page.currentPage}
       lastPage={page.lastPage}

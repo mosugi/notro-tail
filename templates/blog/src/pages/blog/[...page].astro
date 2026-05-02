@@ -6,7 +6,7 @@ import BlogList from "../../components/blog/BlogList.astro";
 import Layout from "../../layouts/Layout.astro";
 import Pagination from "../../components/blog/Pagination.astro";
 import config from "../../config";
-import { getSortedBlogPosts, getPinnedPosts, getBeginnerPosts } from "../../lib/blog.ts";
+import { getSortedBlogPosts, getPinnedPosts, getBeginnerPosts, buildSlugMap } from "../../lib/blog.ts";
 
 export async function getStaticPaths({
   paginate,
@@ -31,6 +31,10 @@ export async function getStaticPaths({
 
 const { page, pinnedPostsData, beginnerPostsData } = Astro.props;
 
+// Build slug map from all posts to handle duplicate slugs (getCollection is cached by Astro)
+const allPostsForSlug = await getCollection("posts");
+const slugMap = buildSlugMap(allPostsForSlug);
+
 // Exclude pinned and beginner posts from the regular list to avoid duplication with each section
 const data = page.data
   .filter((entry) => !hasTag(entry.data.properties.Tags, "pinned"))
@@ -46,7 +50,7 @@ const data = page.data
     {page.currentPage === 1 && pinnedPostsData.length > 0 && (
       <section class="mb-10">
         <h2 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">ピン留め</h2>
-        <BlogList posts={pinnedPostsData} />
+        <BlogList posts={pinnedPostsData} slugMap={slugMap} />
       </section>
     )}
     {page.currentPage > 1 && pinnedPostsData.length > 0 && (
@@ -57,7 +61,7 @@ const data = page.data
     {page.currentPage === 1 && beginnerPostsData.length > 0 && (
       <section class="mb-10">
         <h2 class="mb-4 text-lg font-semibold text-gray-700 dark:text-gray-300">入門</h2>
-        <BlogList posts={beginnerPostsData} />
+        <BlogList posts={beginnerPostsData} slugMap={slugMap} />
       </section>
     )}
     {page.currentPage > 1 && beginnerPostsData.length > 0 && (
@@ -65,7 +69,7 @@ const data = page.data
         <a href="/blog/" class="text-sky-600 hover:underline dark:text-sky-400">← 入門記事</a>は1ページ目にあります
       </p>
     )}
-    <BlogList posts={data} />
+    <BlogList posts={data} slugMap={slugMap} />
     <Pagination
       currentPage={page.currentPage}
       lastPage={page.lastPage}

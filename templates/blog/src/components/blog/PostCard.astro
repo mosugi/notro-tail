@@ -6,11 +6,12 @@ import config from "../../config";
 
 interface Props {
   data: CollectionEntry<"posts">["data"];
+  slugMap?: Map<string, string>;
 }
 
-const { data } = Astro.props;
+const { data, slugMap } = Astro.props;
 
-const slug = getPlainText(data.properties.Slug) || data.id;
+const slug = slugMap?.get(data.id) ?? (getPlainText(data.properties.Slug) || data.id);
 const title = getPlainText(data.properties.Name);
 const description = getPlainText(data.properties.Description);
 const date = data.properties.Date?.type === "date" ? data.properties.Date.date?.start : undefined;
