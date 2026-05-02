@@ -16,13 +16,25 @@ function detectPackageManager(): "npm" | "pnpm" | "yarn" | "bun" {
 }
 
 const TEMPLATES = {
+  basics: {
+    label: "A basic, helpful starter project (recommended)",
+    hint: "Clean starter with post listing, individual pages, and Tailwind CSS",
+  },
   blog: {
-    label: "Blog",
+    label: "Use blog (Starwind) template",
     hint: "Full-featured blog with list, tags, pagination, RSS, and SEO",
   },
+  docs: {
+    label: "Use docs (Starlight) template",
+    hint: "Documentation site with sidebar navigation and search",
+  },
+  gallery: {
+    label: "Use gallery template",
+    hint: "Visual gallery for showcasing images or portfolio items",
+  },
   blank: {
-    label: "Blank",
-    hint: "Minimal starter — just pages and Notion content rendering",
+    label: "Use minimal (empty) template",
+    hint: "Bare minimum — just pages and Notion content rendering",
   },
 } as const;
 
@@ -51,7 +63,7 @@ async function main() {
 
   // Template selection
   const template = await p.select({
-    message: "Choose a template",
+    message: "How would you like to start your new project?",
     options: (Object.entries(TEMPLATES) as [TemplateName, (typeof TEMPLATES)[TemplateName]][]).map(
       ([value, { label, hint }]) => ({ value, label, hint }),
     ),

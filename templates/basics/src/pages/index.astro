@@ -1,0 +1,44 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+import { getPlainText } from "notro-loader/utils";
+import { getSortedPosts } from "../lib/posts";
+
+const allPosts = await getCollection("posts");
+const posts = getSortedPosts(allPosts);
+---
+
+<Layout title="My Site">
+  <div>
+    <h1 class="text-3xl font-bold mb-8 nt-text">Posts</h1>
+    <ul class="space-y-6">
+      {posts.map((post) => {
+        const slug = post.data.properties.Slug.rich_text[0]?.plain_text;
+        const title = getPlainText(post.data.properties.Name) ?? "";
+        const description = post.data.properties.Description?.rich_text[0]?.plain_text;
+        const date = post.data.properties.Date?.date?.start;
+        return (
+          <li class="border-b nt-border pb-6 last:border-b-0">
+            <a href={`/${slug}/`} class="block group">
+              {date && (
+                <time class="text-sm nt-text-subtle mb-1 block">
+                  {new Date(date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+              <h2 class="text-lg font-semibold nt-text group-hover:text-[var(--notro-blue)] transition-colors">
+                {title}
+              </h2>
+              {description && (
+                <p class="mt-1 text-sm nt-text-muted">{description}</p>
+              )}
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+</Layout>

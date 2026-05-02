@@ -1,0 +1,40 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "../layouts/Layout.astro";
+import { NotroContent } from "notro-loader";
+import { getPlainText } from "notro-loader/utils";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts");
+  return posts.map((post) => ({
+    params: { slug: post.data.properties.Slug.rich_text[0]?.plain_text },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const title = getPlainText(post.data.properties.Name) ?? "";
+const description = post.data.properties.Description?.rich_text[0]?.plain_text;
+const date = post.data.properties.Date?.date?.start;
+---
+
+<Layout title={title} description={description}>
+  <article>
+    <a href="/" class="text-sm nt-text-muted hover:text-[var(--notro-blue)] transition-colors mb-6 inline-block">
+      ← Back
+    </a>
+    {date && (
+      <time class="text-sm nt-text-subtle mb-2 block">
+        {new Date(date).toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        })}
+      </time>
+    )}
+    <h1 class="text-3xl font-bold mb-8 nt-text">{title}</h1>
+    <div class="notro-markdown">
+      <NotroContent markdown={post.data.markdown} />
+    </div>
+  </article>
+</Layout>
