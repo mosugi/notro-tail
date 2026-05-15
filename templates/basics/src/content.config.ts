@@ -5,7 +5,7 @@ import { z } from "zod";
 const postsCollection = defineCollection({
   loader: loader({
     queryParameters: {
-      data_source_id: import.meta.env.NOTION_DATASOURCE_ID_BASICS ?? import.meta.env.NOTION_DATASOURCE_ID,
+      data_source_id: import.meta.env.NOTION_DATASOURCE_ID,
       filter: {
         property: "Public",
         checkbox: { equals: true },

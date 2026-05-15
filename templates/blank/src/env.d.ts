@@ -2,9 +2,7 @@
 /// <reference path="../.astro/types.d.ts" />
 
 interface ImportMetaEnv {
-  // Notion API credentials (required)
   readonly NOTION_TOKEN: string;
-  readonly NOTION_DATASOURCE_ID_BLANK?: string;
   readonly NOTION_DATASOURCE_ID: string;
 }
 
