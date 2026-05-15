@@ -3,9 +3,10 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import config from "../config";
 import BlogList from "../components/blog/BlogList.astro";
-import { getSortedBlogPosts, getPinnedPosts } from "../lib/blog";
+import { getSortedBlogPosts, getPinnedPosts, buildSlugMap } from "../lib/blog";
 
 const allPosts = await getCollection("posts");
+const slugMap = buildSlugMap(allPosts);
 const blogPosts = getSortedBlogPosts(allPosts);
 const pinnedPosts = getPinnedPosts(blogPosts);
 const recentPosts = blogPosts
@@ -20,12 +21,12 @@ const pinnedPostsData = pinnedPosts.map(({ data }) => data);
     {pinnedPostsData.length > 0 && (
       <section class="mb-12">
         <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-6">ピン留め</h2>
-        <BlogList posts={pinnedPostsData} />
+        <BlogList posts={pinnedPostsData} slugMap={slugMap} />
       </section>
     )}
     <section>
       <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-6">最新記事</h2>
-      <BlogList posts={recentPosts} />
+      <BlogList posts={recentPosts} slugMap={slugMap} />
       <div class="mt-8 text-center">
         <a href="/blog/" class="text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors">
           すべての記事を見る →

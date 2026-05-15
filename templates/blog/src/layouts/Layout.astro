@@ -25,7 +25,6 @@ interface Props {
 
 const { title, description, bodyClass, type = "website", ogImageAlt, datePublished, prevUrl, nextUrl, noindex } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
-const gtagId = import.meta.env.PUBLIC_GTAG_ID;
 ---
 
 <!doctype html>
@@ -42,12 +41,6 @@ const gtagId = import.meta.env.PUBLIC_GTAG_ID;
       nextUrl={nextUrl}
       noindex={noindex}
     />
-    {gtagId && (
-      <>
-        <script is:inline async type="text/partytown" src={`https://www.googletagmanager.com/gtag/js?id=${gtagId}`}></script>
-        <script is:inline type="text/partytown" set:html={`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${gtagId}');`}></script>
-      </>
-    )}
   </head>
   <body class={bodyClass}>
     <Header />

@@ -22,6 +22,8 @@ const config = {
   },
   blog: {
     postsPerPage: 10,
+    // Shown as <meta description> on the blog list page
+    description: "",
     // System tags — affect post filtering logic (not shown as public tags)
     // "page"   — marks a Notion post as a fixed page (excluded from blog listing)
     // "pinned" — marks a post to appear at the top of the blog list (page 1 only)
