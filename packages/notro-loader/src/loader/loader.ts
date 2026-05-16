@@ -178,7 +178,12 @@ export function loader({
   // Return a loader object
   return {
     name: "notro-loader",
-    load: async ({ store, parseData, logger }): Promise<void> => {
+    load: async ({ store, parseData, logger, config, collection }): Promise<void> => {
+      // Build a synthetic filePath for each entry so Starlight's sidebar autogenerate
+      // can resolve route paths via entry.filePath (which is undefined for loader-based entries).
+      // The path mirrors what Astro sets for file-backed entries: `<srcRelative>content/<collection>/<id>.md`
+      const srcRelative = config.srcDir.pathname.replace(config.root.pathname, '');
+      const collectionBasePath = `${srcRelative}content/${collection}`;
       // Load data and update the store.
       // Uses retry logic for transient API errors (rate limit, server errors).
       const pageOrDatabases = await queryDataSourceWithRetry(
@@ -308,6 +313,7 @@ export function loader({
               // (which is also the raw markdown) because Astro's store.set()
               // requires body to be a top-level field distinct from the schema data.
               body: rawMarkdown,
+              filePath: `${collectionBasePath}/${entryId}.md`,
             });
           }),
         );
