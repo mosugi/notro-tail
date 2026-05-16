@@ -36,7 +36,7 @@ export const collections = {
   docs: defineCollection({
     loader: loader({
       queryParameters: {
-        data_source_id: import.meta.env.NOTION_DATASOURCE_ID_DOCS ?? import.meta.env.NOTION_DATASOURCE_ID,
+        data_source_id: import.meta.env.NOTION_DATASOURCE_ID,
         filter: { property: "Public", checkbox: { equals: true } },
       },
       clientOptions: { auth: import.meta.env.NOTION_TOKEN },

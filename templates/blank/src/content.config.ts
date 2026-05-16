@@ -5,7 +5,7 @@ import { z } from "zod";
 const pagesCollection = defineCollection({
   loader: loader({
     queryParameters: {
-      data_source_id: import.meta.env.NOTION_DATASOURCE_ID_BLANK ?? import.meta.env.NOTION_DATASOURCE_ID,
+      data_source_id: import.meta.env.NOTION_DATASOURCE_ID,
     },
     clientOptions: {
       auth: import.meta.env.NOTION_TOKEN,

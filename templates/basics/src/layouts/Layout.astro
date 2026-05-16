@@ -1,0 +1,32 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+const siteTitle = "My Site";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title === siteTitle ? title : `${title} | ${siteTitle}`}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <header class="border-b nt-border">
+      <div class="max-w-2xl mx-auto px-4 py-4">
+        <a href="/" class="text-lg font-semibold nt-text">{siteTitle}</a>
+      </div>
+    </header>
+    <main class="max-w-2xl mx-auto px-4 py-10">
+      <slot />
+    </main>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+{
+  "name": "notro-basics",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "format": "prettier --write 'src/**/*.ts' 'src/**/*.astro'"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "astro": "^6.0.4",
+    "notro-loader": "^0.2.0",
+    "tailwindcss": "^4.2.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.7",
+    "typescript": "^5.9.3",
+    "undici": "^7.24.5",
+    "vite": "^7.3.1"
+  }
+}
