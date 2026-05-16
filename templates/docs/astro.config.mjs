@@ -29,7 +29,6 @@ export default defineConfig({
       components: {
         MarkdownContent: "./src/components/NotroMarkdownContent.astro",
       },
-      sidebar: [{ autogenerate: { directory: "." } }],
     }),
     notro(),
   ],
