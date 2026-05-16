@@ -37,7 +37,6 @@ export const collections = {
     loader: loader({
       queryParameters: {
         data_source_id: import.meta.env.NOTION_DATASOURCE_ID,
-        filter: { property: "Public", checkbox: { equals: true } },
       },
       clientOptions: { auth: import.meta.env.NOTION_TOKEN },
       // Use the Slug property as the entry ID so Starlight's sidebar slugs match.
