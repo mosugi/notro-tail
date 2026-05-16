@@ -29,6 +29,12 @@ export default defineConfig({
       components: {
         MarkdownContent: "./src/components/NotroMarkdownContent.astro",
       },
+      defaultLocale: "root",
+      locales: {
+        root: { label: "English", lang: "en" },
+        ja: { label: "日本語", lang: "ja" },
+        "zh-cn": { label: "简体中文", lang: "zh-CN" },
+      },
     }),
     notro(),
   ],
