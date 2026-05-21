@@ -12,25 +12,57 @@ const notroDocsSchema = pageWithMarkdownSchema
       Public: notroProperties.checkbox,
     }),
   })
-  .transform((data) => ({
-    ...data,
-    // Starlight reads entry.data.title and entry.data.description
-    title: getPlainText(data.properties.Name) ?? "Untitled",
-    description: getPlainText(data.properties.Description) ?? undefined,
-    // Starlight required fields with defaults matching StarlightFrontmatterSchema.
-    // These must be present since we bypass docsSchema() and use a custom schema.
-    draft: false,
-    head: [] as [],
-    template: "doc" as const,
-    pagefind: true,
-    editUrl: true as const,
-    sidebar: { hidden: false, attrs: {} } as {
-      hidden: boolean;
-      order?: number;
-      label?: string;
-      attrs: Record<string, unknown>;
-    },
-  }));
+  .transform((data) => {
+    const slug = getPlainText(data.properties.Slug) ?? "";
+    const isIndex = slug === "index";
+    return {
+      ...data,
+      // Starlight reads entry.data.title and entry.data.description
+      title: getPlainText(data.properties.Name) ?? "Untitled",
+      description: getPlainText(data.properties.Description) ?? undefined,
+      // Starlight required fields with defaults matching StarlightFrontmatterSchema.
+      // These must be present since we bypass docsSchema() and use a custom schema.
+      draft: false,
+      head: [] as [],
+      // The index entry uses the splash template (full-width hero page).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      template: (isIndex ? "splash" : "doc") as any,
+      pagefind: !isIndex,
+      editUrl: true as const,
+      sidebar: {
+        hidden: isIndex,
+        attrs: {},
+      } as {
+        hidden: boolean;
+        order?: number;
+        label?: string;
+        attrs: Record<string, unknown>;
+      },
+      // Hero data for the splash (index) page.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      hero: isIndex ? ({
+        title: "NotionブログをAstroで輝かせる",
+        tagline:
+          "Notionで書いてAstroで配信。高速でSEO最適化された静的サイトを、カスタムコードなしで構築できます。",
+        actions: [
+          {
+            text: "はじめる",
+            link: "/hello-notro/",
+            icon: "right-arrow",
+            variant: "primary",
+            attrs: {},
+          },
+          {
+            text: "GitHubで見る",
+            link: "https://github.com/mosugi/notro",
+            icon: "external",
+            variant: "secondary",
+            attrs: {},
+          },
+        ],
+      } as any) : undefined,
+    };
+  });
 
 export const collections = {
   docs: defineCollection({
