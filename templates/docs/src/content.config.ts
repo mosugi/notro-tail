@@ -55,6 +55,7 @@ export const collections = {
         filter: { property: "Public", checkbox: { equals: true } },
       },
       clientOptions: { auth: import.meta.env.NOTION_TOKEN },
+      useFilePath: true,
       // Use the Slug property as the entry ID so Starlight's sidebar slugs match.
       // e.g. Slug = "getting-started/introduction" → entry ID = "getting-started/introduction"
       generateId: (page) => {
