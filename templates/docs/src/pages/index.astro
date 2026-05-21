@@ -1,0 +1,49 @@
+---
+import StarlightPage from "@astrojs/starlight/components/StarlightPage.astro";
+import { Card, CardGrid } from "@astrojs/starlight/components";
+---
+
+<StarlightPage
+  frontmatter={{
+    title: "notro",
+    template: "splash",
+    hero: {
+      title: "Shine your Notion blog with Astro",
+      tagline:
+        "Write in Notion. Ship with Astro. Build fast, SEO-optimized static sites without writing a single line of code.",
+      actions: [
+        {
+          text: "Get Started",
+          link: "/hello-notro/",
+          icon: "right-arrow",
+          variant: "primary",
+        },
+        {
+          text: "View on GitHub",
+          link: "https://github.com/mosugi/notro",
+          icon: "external",
+          variant: "secondary",
+        },
+      ],
+    },
+  }}
+>
+  <CardGrid stagger>
+    <Card title="Write in Notion" icon="open-book">
+      Use Notion as your CMS. Manage content, structure pages, and publish with
+      a checkbox — no code deploys needed.
+    </Card>
+    <Card title="Fast with Astro" icon="rocket">
+      Generates fully static HTML at build time. Zero JavaScript by default,
+      perfect Lighthouse scores, blazing load times.
+    </Card>
+    <Card title="MDX Pipeline" icon="puzzle">
+      Notion markdown is transformed through remark and rehype plugins — syntax
+      highlighting, math, Mermaid diagrams, and more.
+    </Card>
+    <Card title="Multilingual" icon="translate">
+      Built-in i18n via Starlight. Manage translations directly in Notion by
+      setting the language on each page.
+    </Card>
+  </CardGrid>
+</StarlightPage>
