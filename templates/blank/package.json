@@ -1,7 +1,7 @@
 {
   "name": "notro-blank",
   "type": "module",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "private": true,
   "scripts": {
     "dev": "astro dev",
@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "astro": "^6.0.4",
-    "notro-loader": "^0.2.0",
+    "notro-loader": "^0.3.0",
     "zod": "^4.0.0"
   },
   "devDependencies": {

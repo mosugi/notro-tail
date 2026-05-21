@@ -1,7 +1,7 @@
 {
   "name": "notro-blog",
   "type": "module",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "private": true,
   "scripts": {
     "dev": "astro dev",
@@ -27,7 +27,7 @@
     "@astrojs/sitemap": "^3.7.1",
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.4",
-    "notro-loader": "^0.2.0",
+    "notro-loader": "^0.3.0",
     "zod": "^4.0.0",
     "tailwind-merge": "^3.5.0",
     "tailwind-variants": "^3.2.2",

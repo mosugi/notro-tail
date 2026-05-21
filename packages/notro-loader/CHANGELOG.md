@@ -1,5 +1,29 @@
 # notro-loader
 
+## 0.3.0
+
+### Minor Changes
+
+- [#166](https://github.com/mosugi/notro/pull/166) [`29c1735`](https://github.com/mosugi/notro/commit/29c1735dee46b9347d289b205e34dcfb85cad791) Thanks [@mosugi](https://github.com/mosugi)! - Notion table elements now route through the `components` prop.
+
+  `rehypeBlockElementsPlugin` now renames `<table>`, `<colgroup>`, `<col>`, `<tr>`, `<td>` to their PascalCase counterparts (`TableBlock`, `TableColgroup`, `TableCol`, `TableRow`, `TableCell`). This lets the `components` prop (e.g. `notroComponents`) fully control how Notion tables are rendered — including wrapper markup, Tailwind classes, and `data-*` attributes — without requiring CSS overrides on raw HTML elements.
+
+  `defaultComponents` gains corresponding pass-through entries so headless mode continues to render plain semantic HTML.
+
+### Patch Changes
+
+- [#170](https://github.com/mosugi/notro/pull/170) [`1bf8d2b`](https://github.com/mosugi/notro/commit/1bf8d2bfe8d906d8d3f1f11bb2dba02808c02188) Thanks [@mosugi](https://github.com/mosugi)! - Add `useFilePath` option to `loader()` to make synthetic `filePath` injection opt-in.
+
+  Previously, `loader()` always set a synthetic `filePath` on every store entry to support Starlight's sidebar autogenerate. This was unnecessary overhead for non-Starlight templates and added metadata that standard Astro templates never read.
+
+  The new `useFilePath?: boolean` option (default: `false`) moves this behavior behind an explicit opt-in. Pass `useFilePath: true` when using the loader with `@astrojs/starlight`.
+
+- [#148](https://github.com/mosugi/notro/pull/148) [`24304f0`](https://github.com/mosugi/notro/commit/24304f0604726bae8b9cd7b6abc1f1d6963985b7) Thanks [@mosugi](https://github.com/mosugi)! - Add `isNotionPresignedUrl()` helper and unify S3 presigned URL detection
+  - Export `isNotionPresignedUrl(url)` as a single source of truth for detecting Notion S3 presigned URLs (covers `X-Amz-Algorithm` query param and `prod-files-secure.s3` hostname)
+  - Use it in `isPresignedUrlExpired`'s fallback path, replacing the previous overly-broad hostname check
+  - Fix `isPresignedUrlExpiredInMarkdown` to check **all** presigned URLs in markdown (was only checking the first), so articles with multiple images are correctly invalidated when any URL expires
+  - Align URL extraction regex in `isPresignedUrlExpiredInMarkdown` with `markdownHasPresignedUrls` for consistency
+
 ## 0.2.0
 
 ### Minor Changes
