@@ -35,6 +35,13 @@ type LoaderOptions = {
    * }
    */
   generateId?: (page: PageObjectResponse) => string;
+  /**
+   * When true, sets a synthetic `filePath` on each store entry so that
+   * Starlight's sidebar autogenerate can resolve route paths from the entry ID.
+   * Only needed when using this loader with `@astrojs/starlight`.
+   * @default false
+   */
+  useFilePath?: boolean;
 };
 
 // Notion file-type covers, icons, inline images, and file properties use
@@ -171,6 +178,7 @@ export function loader({
   queryParameters,
   clientOptions,
   generateId,
+  useFilePath = false,
 }: LoaderOptions): Loader {
   const client = new Client({ notionVersion: "2026-03-11", ...clientOptions });
   const getEntryId = generateId ?? ((page: PageObjectResponse) => page.id);
@@ -178,7 +186,13 @@ export function loader({
   // Return a loader object
   return {
     name: "notro-loader",
-    load: async ({ store, parseData, logger }): Promise<void> => {
+    load: async ({ store, parseData, logger, config, collection }): Promise<void> => {
+      // When useFilePath is enabled, build the base path for synthetic filePaths.
+      // This mirrors what Astro sets for file-backed entries and is required by
+      // Starlight's sidebar autogenerate to resolve route paths from entry IDs.
+      const collectionBasePath = useFilePath
+        ? `${config.srcDir.pathname.replace(config.root.pathname, '')}content/${collection}`
+        : null;
       // Load data and update the store.
       // Uses retry logic for transient API errors (rate limit, server errors).
       const pageOrDatabases = await queryDataSourceWithRetry(
@@ -308,6 +322,7 @@ export function loader({
               // (which is also the raw markdown) because Astro's store.set()
               // requires body to be a top-level field distinct from the schema data.
               body: rawMarkdown,
+              ...(collectionBasePath ? { filePath: `${collectionBasePath}/${entryId}.md` } : {}),
             });
           }),
         );
