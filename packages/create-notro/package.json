@@ -1,6 +1,6 @@
 {
   "name": "create-notro",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "description": "Create a new Notro site from the official starter template",
   "author": "mosugi <mosugeek@gmail.com>",

@@ -1,7 +1,7 @@
 {
   "name": "notro-basics",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "scripts": {
     "dev": "astro dev",
@@ -17,7 +17,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "astro": "^6.0.4",
-    "notro-loader": "^0.2.0",
+    "notro-loader": "^0.3.0",
     "tailwindcss": "^4.2.1",
     "zod": "^4.0.0"
   },
