@@ -35,6 +35,12 @@ export default defineConfig({
         ja: { label: "日本語", lang: "ja" },
         "zh-cn": { label: "简体中文", lang: "zh-CN" },
       },
+      sidebar: [
+        { label: "Getting Started", autogenerate: { directory: "getting-started" } },
+        { label: "Guides", autogenerate: { directory: "guides" } },
+        { label: "Reference", autogenerate: { directory: "reference" } },
+        { label: "Deployment", autogenerate: { directory: "deployment" } },
+      ],
     }),
     notro(),
   ],
