@@ -9,7 +9,8 @@ import sys
 from pathlib import Path
 
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN")
-DOCS_DB_ID = "7136b8b6-8958-82e2-b326-019f05c821ef"
+# database_id for data_source_id 1126b8b6-8958-825a-941b-87e5a047a3a0 (NOTION_DATASOURCE_ID)
+DOCS_DB_ID = "31c6b8b6-8958-81c0-96fd-e63fec21205b"
 CONTENT_DIR = Path(__file__).parent.parent / "content" / "docs"
 
 if not NOTION_TOKEN:
@@ -61,12 +62,9 @@ def create_notion_page(title: str, slug: str, markdown_body: str) -> dict:
 
 
 def main():
-    files = sorted(
-        f for f in CONTENT_DIR.glob("*.md")
-        if f.name.startswith("ja-") or f.name.startswith("zh-cn-")
-    )
+    files = sorted(CONTENT_DIR.glob("*.md"))
 
-    print(f"Found {len(files)} translation files to push")
+    print(f"Found {len(files)} files to push")
 
     success = 0
     errors = 0
