@@ -1,10 +1,55 @@
 ---
 import config from "../config";
+
+const { pathname } = Astro.url;
+
+let currentLang = "en";
+let basePath = pathname;
+if (pathname.startsWith("/blog/ja/")) {
+  currentLang = "ja";
+  basePath = "/blog/" + pathname.slice("/blog/ja/".length);
+} else if (pathname.startsWith("/blog/zh-cn/")) {
+  currentLang = "zh-cn";
+  basePath = "/blog/" + pathname.slice("/blog/zh-cn/".length);
+}
+
+const afterBlog = basePath.slice("/blog/".length);
+const isArticle =
+  afterBlog.length > 0 && !/^\d+\/$/.test(afterBlog) && !afterBlog.startsWith("tag/");
+
+function langUrl(target: string): string {
+  if (!isArticle) return "/blog/";
+  if (target === "en") return basePath;
+  return `/blog/${target}/${basePath.slice("/blog/".length)}`;
+}
+
+const langs = [
+  { code: "en", label: "English" },
+  { code: "ja", label: "日本語" },
+  { code: "zh-cn", label: "中文" },
+];
 ---
 
 <footer class="border-t nt-border mt-16 dark:bg-slate-800 dark:border-white/8">
   <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
-    <div class="py-6 text-center">
+    <div class="py-6 flex flex-col items-center gap-3">
+      <nav aria-label="Language switcher" class="flex items-center gap-2 text-sm">
+        {langs.map((l, i) => (
+          <>
+            {i > 0 && <span class="nt-text-30 dark:text-slate-600" aria-hidden="true">|</span>}
+            {l.code === currentLang ? (
+              <span class="font-semibold nt-text dark:text-slate-200">{l.label}</span>
+            ) : (
+              <a
+                href={langUrl(l.code)}
+                class="nt-text-45 dark:text-slate-400 hover:nt-text dark:hover:text-slate-200 transition-colors no-underline"
+              >
+                {l.label}
+              </a>
+            )}
+          </>
+        ))}
+      </nav>
       <span class="text-sm nt-text-40 dark:text-slate-500">&copy; {new Date().getFullYear()} {config.site.name}</span>
     </div>
   </div>

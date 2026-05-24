@@ -17,6 +17,7 @@ function makeEntry(opts: {
   name?: string;
   tags?: string[];
   date?: string;
+  lang?: string;
 }) {
   const tagOptions = (opts.tags ?? []).map((name) => ({ id: name, name, color: "default" }));
   return {
@@ -30,6 +31,7 @@ function makeEntry(opts: {
         Name: { type: "title", title: opts.name ? [{ plain_text: opts.name }] : [] },
         Tags: { type: "multi_select", multi_select: tagOptions },
         Date: { type: "date", date: opts.date ? { start: opts.date } : null },
+        Lang: { type: "select", select: opts.lang ? { id: opts.lang, name: opts.lang, color: "default" } : null },
       },
     },
   } as any;
@@ -115,6 +117,24 @@ describe("buildSlugMap", () => {
     expect(map.get("b1")).toBe("b");
     expect(map.get("a2")).toBe("a-2");
     expect(map.get("b2")).toBe("b-2");
+  });
+
+  it("prepends lang prefix for non-en articles", () => {
+    const posts = [
+      makeEntry({ id: "en", slug: "hello-notro", lang: "en" }),
+      makeEntry({ id: "ja", slug: "hello-notro", lang: "ja" }),
+      makeEntry({ id: "zh", slug: "hello-notro", lang: "zh-cn" }),
+    ];
+    const map = buildSlugMap(posts);
+    expect(map.get("en")).toBe("hello-notro");
+    expect(map.get("ja")).toBe("ja/hello-notro");
+    expect(map.get("zh")).toBe("zh-cn/hello-notro");
+  });
+
+  it("treats null or undefined lang as en (no prefix)", () => {
+    const posts = [makeEntry({ id: "a", slug: "foo" })];
+    const map = buildSlugMap(posts);
+    expect(map.get("a")).toBe("foo");
   });
 });
 
