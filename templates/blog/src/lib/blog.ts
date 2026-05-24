@@ -26,7 +26,9 @@ export function buildSlugMap(posts: PostEntry[]): Map<string, string> {
   const result = new Map<string, string>();
 
   for (const entry of posts) {
-    const rawSlug = getPlainText(entry.data.properties.Slug) || entry.id;
+    const cleanSlug = getPlainText(entry.data.properties.Slug) || entry.id;
+    const lang = entry.data.properties.Lang?.select?.name;
+    const rawSlug = lang && lang !== "en" ? `${lang}/${cleanSlug}` : cleanSlug;
     const count = slugCounts.get(rawSlug) ?? 0;
     slugCounts.set(rawSlug, count + 1);
 
