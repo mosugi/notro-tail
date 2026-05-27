@@ -33,23 +33,25 @@ const langs = [
 <footer class="border-t nt-border mt-16 dark:bg-slate-800 dark:border-white/8">
   <div class="mx-auto max-w-screen-xl px-4 sm:px-6 lg:px-8">
     <div class="py-6 flex flex-col items-center gap-3">
-      <nav aria-label="Language switcher" class="flex items-center gap-2 text-sm">
-        {langs.map((l, i) => (
-          <>
-            {i > 0 && <span class="nt-text-30 dark:text-slate-600" aria-hidden="true">|</span>}
-            {l.code === currentLang ? (
-              <span class="font-semibold nt-text dark:text-slate-200">{l.label}</span>
-            ) : (
-              <a
-                href={langUrl(l.code)}
-                class="nt-text-45 dark:text-slate-400 hover:nt-text dark:hover:text-slate-200 transition-colors no-underline"
-              >
-                {l.label}
-              </a>
-            )}
-          </>
-        ))}
-      </nav>
+      {isArticle && (
+        <nav aria-label="Language switcher" class="flex items-center gap-2 text-sm">
+          {langs.map((l, i) => (
+            <>
+              {i > 0 && <span class="nt-text-30 dark:text-slate-600" aria-hidden="true">|</span>}
+              {l.code === currentLang ? (
+                <span class="font-semibold nt-text dark:text-slate-200">{l.label}</span>
+              ) : (
+                <a
+                  href={langUrl(l.code)}
+                  class="nt-text-45 dark:text-slate-400 hover:nt-text dark:hover:text-slate-200 transition-colors no-underline"
+                >
+                  {l.label}
+                </a>
+              )}
+            </>
+          ))}
+        </nav>
+      )}
       <span class="text-sm nt-text-40 dark:text-slate-500">&copy; {new Date().getFullYear()} {config.site.name}</span>
     </div>
   </div>
