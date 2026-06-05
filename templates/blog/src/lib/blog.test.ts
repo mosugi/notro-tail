@@ -8,6 +8,7 @@ import {
   getPinnedPosts,
   getBeginnerPosts,
   getAllPublicTags,
+  filterPostsByLang,
 } from "./blog.ts";
 
 // Minimal CollectionEntry mock — only the fields blog.ts accesses.
@@ -308,5 +309,31 @@ describe("getAllPublicTags", () => {
   it("returns empty array for posts with no tags", () => {
     const posts = [makeEntry({ id: "a" }), makeEntry({ id: "b" })];
     expect(getAllPublicTags(posts, INTERNAL_TAGS)).toHaveLength(0);
+  });
+});
+
+// ─────────────────────────────────────────────
+// filterPostsByLang
+// ─────────────────────────────────────────────
+describe("filterPostsByLang", () => {
+  const posts = [
+    makeEntry({ id: "en1", lang: "en" }),
+    makeEntry({ id: "ja1", lang: "ja" }),
+    makeEntry({ id: "zh1", lang: "zh-cn" }),
+    makeEntry({ id: "no-lang" }),
+  ];
+
+  it("returns only posts matching the given lang", () => {
+    const result = filterPostsByLang(posts, "ja");
+    expect(result.map((p) => p.id)).toEqual(["ja1"]);
+  });
+
+  it("treats posts with no Lang property as en", () => {
+    const result = filterPostsByLang(posts, "en");
+    expect(result.map((p) => p.id)).toEqual(["en1", "no-lang"]);
+  });
+
+  it("returns empty array when no posts match", () => {
+    expect(filterPostsByLang(posts, "fr")).toHaveLength(0);
   });
 });

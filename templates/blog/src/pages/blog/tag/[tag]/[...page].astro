@@ -6,7 +6,7 @@ import BlogList from "../../../../components/blog/BlogList.astro";
 import Layout from "../../../../layouts/Layout.astro";
 import Pagination from "../../../../components/blog/Pagination.astro";
 import config from "../../../../config";
-import { getAllPublicTags, buildSlugMap } from "../../../../lib/blog.ts";
+import { getAllPublicTags, filterPostsByLang, buildSlugMap } from "../../../../lib/blog.ts";
 
 export async function getStaticPaths({
   paginate,
@@ -14,10 +14,11 @@ export async function getStaticPaths({
   paginate: PaginateFunction;
 }) {
   const posts = await getCollection("posts");
-  const tags = getAllPublicTags(posts, config.blog.internalTags);
+  const enPosts = filterPostsByLang(posts, "en");
+  const tags = getAllPublicTags(enPosts, config.blog.internalTags);
 
   return tags.flatMap((tag) => {
-    const filteredPosts = posts.filter((post) =>
+    const filteredPosts = enPosts.filter((post) =>
       hasTag(post.data.properties.Tags, tag),
     );
     return paginate(filteredPosts, {

@@ -88,6 +88,15 @@ export function getPublicTags(
   return getMultiSelect(tagsProperty).filter((t) => !internalTags.includes(t.name));
 }
 
+/** Returns posts whose Lang property matches the given language code.
+ *  Posts with no Lang value are treated as "en". */
+export function filterPostsByLang(posts: PostEntry[], lang: string): PostEntry[] {
+  return posts.filter((entry) => {
+    const postLang = entry.data.properties.Lang?.select?.name ?? "en";
+    return postLang === lang;
+  });
+}
+
 /** Returns posts tagged "pinned". */
 export function getPinnedPosts(blogPosts: PostEntry[]): PostEntry[] {
   return blogPosts.filter((entry) => hasTag(entry.data.properties.Tags, "pinned"));
