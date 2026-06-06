@@ -1,7 +1,7 @@
 ---
 id: TASK-8
 title: "Fix: buildSatteriMdastPlugins() is dead code — integration.ts pushes notroCalloutPlugin directly"
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06'
 labels: [bug, cleanup]
@@ -62,7 +62,7 @@ truth for the Sätteri plugin list, and makes adding future plugins mechanical.
 
 ## Acceptance criteria
 
-- [ ] `integration.ts` uses `buildSatteriMdastPlugins()` (or the function is removed)
-- [ ] Adding a new plugin to `buildSatteriMdastPlugins()` causes it to be registered
-- [ ] Build passes
+- [x] `integration.ts` uses `buildSatteriMdastPlugins()` (or the function is removed)
+- [x] Adding a new plugin to `buildSatteriMdastPlugins()` causes it to be registered
+- [x] Build passes
 <!-- SECTION:DESCRIPTION:END -->

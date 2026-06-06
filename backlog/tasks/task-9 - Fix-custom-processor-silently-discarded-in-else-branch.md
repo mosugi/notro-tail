@@ -1,7 +1,7 @@
 ---
 id: TASK-9
 title: "Fix: non-Sätteri custom processor silently discarded in else branch"
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06'
 labels: [bug]
@@ -60,7 +60,7 @@ not be desirable.
 
 ## Acceptance criteria
 
-- [ ] Passing a non-Sätteri non-null `processor` emits a console.warn
-- [ ] Warning message names `satteri()` as the only supported value
-- [ ] Unified path continues to work when `processor` is `undefined`
+- [x] Passing a non-Sätteri non-null `processor` emits a console.warn
+- [x] Warning message names `satteri()` as the only supported value
+- [x] Unified path continues to work when `processor` is `undefined`
 <!-- SECTION:DESCRIPTION:END -->

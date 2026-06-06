@@ -45,7 +45,7 @@ import { unified } from '@astrojs/markdown-remark';
 import { isSatteriProcessor } from '@astrojs/markdown-satteri';
 import { remarkNfm } from 'remark-notro';
 import { setNotroPlugins } from './utils/notro-config.ts';
-import { notroCalloutPlugin } from './utils/satteri-plugins.ts';
+import { buildSatteriMdastPlugins } from './utils/satteri-plugins.ts';
 
 /**
  * Options for the notro() Astro integration.
@@ -178,8 +178,12 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 				// full remark/rehype pipeline.
 				let resolvedProcessor: MarkdownProcessor;
 				if (processor != null && isSatteriProcessor(processor)) {
-					// Sätteri path: inject notro's callout MDASTP plugin.
-					processor.options.mdastPlugins.push(notroCalloutPlugin);
+					// Enable directive parsing so :::callout{...} blocks are parsed as
+					// containerDirective nodes that notroCalloutPlugin can transform.
+					processor.options.features.directive = true;
+					for (const plugin of buildSatteriMdastPlugins()) {
+						processor.options.mdastPlugins.push(plugin);
+					}
 					if (remarkPlugins.length > 0 || rehypePlugins.length > 0 || shikiConfig != null) {
 						// eslint-disable-next-line no-console
 						console.warn(
@@ -191,6 +195,14 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 					}
 					resolvedProcessor = processor;
 				} else {
+					if (processor != null) {
+						// eslint-disable-next-line no-console
+						console.warn(
+							'[notro] processor option was provided but is not a Sätteri processor. ' +
+							'Only satteri() from @astrojs/markdown-satteri is supported. ' +
+							'The processor has been ignored and unified() will be used instead.',
+						);
+					}
 					// Default unified path: pin MDX to unified() with notro's full pipeline.
 					// This prevents inheriting a top-level markdown.processor: satteri() that
 					// the user may have set for .md files — notro requires remark/rehype support.

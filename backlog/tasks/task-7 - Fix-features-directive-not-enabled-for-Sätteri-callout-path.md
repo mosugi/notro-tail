@@ -1,7 +1,7 @@
 ---
 id: TASK-7
 title: "Fix: features.directive not enabled when processor: satteri() is used"
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06'
 labels: [bug]
@@ -58,8 +58,8 @@ if (processor != null && isSatteriProcessor(processor)) {
 
 ## Acceptance criteria
 
-- [ ] `processor.options.features.directive = true` is set before the `push()`
-- [ ] `:::callout{icon="💡" color="gray_bg"}...:::` in a static `.mdx` file renders
+- [x] `processor.options.features.directive = true` is set before the `push()`
+- [x] `:::callout{icon="💡" color="gray_bg"}...:::` in a static `.mdx` file renders
       as a `<callout>` component (not as literal text) when `processor: satteri()`
-- [ ] Build passes
+- [x] Build passes
 <!-- SECTION:DESCRIPTION:END -->
