@@ -38,6 +38,10 @@ import { unified } from '@astrojs/markdown-remark';
 
 updateConfig({
   integrations: [mdx({
+    // explicit processor: unified() serves double duty:
+    // 1. uses the non-deprecated API (remarkPlugins/rehypePlugins on mdx() are removed in Astro 8.0)
+    // 2. guards against inheriting markdown.processor: satteri() from the user's Astro config —
+    //    notro's pipeline requires remark/rehype plugins that Sätteri doesn't support
     processor: unified({
       remarkPlugins: [remarkNfm, ...remarkPlugins],
       rehypePlugins: allRehypePlugins,
@@ -47,10 +51,22 @@ updateConfig({
 })
 ```
 
+## Why both processor: unified() and extendMarkdownConfig: false
+
+`@astrojs/mdx`'s `processor` option defaults to inheriting `markdown.processor` from the Astro config.
+If a user sets `markdown.processor: satteri()` for `.md` files, MDX would also switch to Sätteri —
+breaking notro because Sätteri doesn't support remark/rehype plugins.
+
+`extendMarkdownConfig: false` prevents inheriting legacy `markdown.remarkPlugins` etc.,
+while `processor: unified({...})` explicitly pins the MDX processor regardless of the user's
+top-level `markdown.processor` setting.
+
 ## Acceptance criteria
 
-- [ ] `integration.ts` uses `processor: unified()` instead of top-level options
-- [ ] No deprecation warnings on `pnpm run build`
+- [ ] `integration.ts` uses `processor: unified()` instead of deprecated top-level options
+- [ ] No deprecation warnings in `pnpm run build` output
 - [ ] `pnpm run build` passes
+- [ ] Comment added explaining why `processor: unified()` is explicit (not just default)
+- [ ] `NotroOptions` JSDoc updated to mention Sätteri incompatibility
 - [ ] Changeset added (patch for notro-loader)
 <!-- SECTION:DESCRIPTION:END -->

@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-06-06 00:14'
 labels: []
-dependencies: []
+dependencies: [TASK-4, TASK-5]
 priority: low
 ordinal: 6000
 ---
@@ -38,7 +38,8 @@ export default defineConfig({
 
 - Default remains `unified()` — no breaking change
 - When `processor: satteri()` is passed, notro injects its Sätteri-native MDASTP/HAST plugins instead of remark/rehype plugins
-- User-provided `remarkPlugins` / `rehypePlugins` are silently ignored (or warned) when Sätteri is active — Sätteri plugin equivalents must be used
+- User-provided `remarkPlugins` / `rehypePlugins` are silently ignored (with a warning) when Sätteri is active — Sätteri plugin equivalents must be used
+- Note: `remarkPlugins` / `rehypePlugins` on `NotroOptions` only apply to the `@astrojs/mdx` path (static `.mdx` files). The Notion content path (`evaluate()`) always uses unified regardless of `processor`
 
 ## Acceptance criteria
 

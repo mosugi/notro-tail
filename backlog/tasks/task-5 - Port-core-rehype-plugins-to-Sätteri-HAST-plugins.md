@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-06-06 00:14'
 labels: []
-dependencies: []
+dependencies: [TASK-4]
 priority: low
 ordinal: 5000
 ---
@@ -15,45 +15,68 @@ ordinal: 5000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 ## Background
 
-The following rehype plugins in `packages/notro-loader/src/utils/mdx-pipeline.ts` must be ported to Sätteri HAST plugin API for full Sätteri compatibility. Depends on TASK-4.
+The core rehype plugins in `packages/notro-loader/src/utils/mdx-pipeline.ts` need to be ported to Sätteri HAST plugin API for full Sätteri `@astrojs/mdx` compatibility. Depends on TASK-4.
 
-## Plugins to port
+**Scope reminder**: This is for static `.mdx` file processing via `@astrojs/mdx`. The Notion content path (`evaluate()`) stays on unified and is unaffected.
 
-| Plugin | What it does |
-|---|---|
-| `rehypeRaw` (external) | Parses raw HTML strings from Notion markdown into hast nodes. Sätteri may handle this natively. |
-| `rehypeNotionColorPlugin` | Converts Notion `color=` attributes on `<p>`, `<h1-h6>`, `<span>` to Tailwind CSS classes |
-| `rehypeBlockElementsPlugin` | Renames Notion block elements (video, table_of_contents…) from lowercase to PascalCase for MDX component map |
-| `rehypeInlineMentionsPlugin` | Renames mention elements (mention-user…) from hyphenated to PascalCase |
-| `rehypeSlug` (external) | Adds `id` attributes to h1–h4 headings |
-| `rehypeTocPlugin` | Populates `<TableOfContents>` with anchor links to all headings |
-| `resolvePageLinksPlugin` | Resolves Notion notion.so URLs to local paths using `linkToPages` map |
+## Plugins: porting analysis
 
-## Sätteri HAST plugin API
+| Plugin | Location | What it does | Porting approach |
+|--------|----------|--------------|-----------------|
+| `rehypeRaw` | external | Parses raw HTML strings into hast nodes | **Likely unnecessary** — Sätteri's Rust parser handles raw HTML natively. Verify. |
+| `rehypeNotionColorPlugin` | `mdx-pipeline.ts` | `color=` attr on `<p>/<h1-h6>/<span>` → Tailwind CSS classes | Port to Sätteri HAST plugin with `element.filter` |
+| `rehypeBlockElementsPlugin` | `mdx-pipeline.ts` | Lowercase Notion block elements → PascalCase for MDX component map | **Needs research**: Sätteri uses `oxc` (not `acorn`) for MDX — verify whether the lowercase→PascalCase rename trick still works with oxc-based JSX compilation |
+| `rehypeInlineMentionsPlugin` | `mdx-pipeline.ts` | `mention-user` etc. → `MentionUser` etc. | Same concern as `rehypeBlockElementsPlugin` |
+| `rehypeSlug` | external | `id` attrs on h1–h4 | Port to Sätteri HAST plugin (straightforward) |
+| `rehypeTocPlugin` | `mdx-pipeline.ts` | Populates `<TableOfContents>` with heading anchor links | Port to Sätteri HAST plugin; runs after slug plugin |
+| `resolvePageLinksPlugin` | `mdx-pipeline.ts` | Resolves `notion.so` URLs using `linkToPages` map | **Requires design work** (see below) |
+
+## Key open question: PascalCase rename with oxc-based MDX
+
+`rehypeBlockElementsPlugin` renames `<video>` → `<Video>` etc. in the HAST tree so that `@mdx-js/mdx` emits `_jsx(Video, ...)` (component lookup) instead of `_jsx("video", ...)` (literal HTML string). This is a `@mdx-js/mdx`-specific behavior.
+
+Sätteri uses `oxc` for MDX compilation. Whether oxc follows the same lowercase→string / PascalCase→component-lookup convention must be verified before implementing the Sätteri HAST plugin equivalent.
+
+## Key open question: resolvePageLinksPlugin and runtime parameters
+
+`resolvePageLinksPlugin` takes a `{ linkToPages }` option at runtime (per-compile, not at plugin registration). Sätteri plugins are registered at configuration time.
+
+Options to investigate:
+1. Does Sätteri support factory-function plugins (closure over `linkToPages`)?
+2. Can `linkToPages` be injected via a build-time Vite plugin or loader step?
+3. For static `.mdx` files, is `resolvePageLinksPlugin` even relevant? (`.mdx` files are not Notion content and don't contain `notion.so` URLs — this plugin may not be needed for the Sätteri path)
+
+## Sätteri HAST plugin API reference
 
 ```ts
-import { defineHastPlugin } from '@astrojs/markdown-satteri';
+import { defineHastPlugin } from 'satteri';
 
 const notroColorPlugin = defineHastPlugin({
   name: 'notro-color',
   element: {
     filter: ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span'],
     visit(node, ctx) {
-      // convert color= attr to Tailwind class
+      const color = node.properties?.color;
+      if (typeof color === 'string') {
+        const cls = notionColorToClass(color);
+        delete node.properties.color;
+        ctx.setProperty(node, 'className', [
+          ...(node.properties.className ?? []), cls
+        ].filter(Boolean));
+      }
     },
   },
 });
 ```
 
-## Notes
-
-- `rehypeRaw` may be unnecessary with Sätteri (Rust parser may handle raw HTML natively — verify)
-- `rehypeBlockElementsPlugin` / `rehypeInlineMentionsPlugin`: Sätteri's MDX uses `oxc` not `acorn`, so JSX node type behavior may differ
-- External plugins (`rehypeSlug`, user's `rehypeKatex`, `rehypeMermaid`) cannot be used — need Sätteri-compatible alternatives or notro ports
-
 ## Acceptance criteria
 
-- [ ] All core rehype plugins ported to Sätteri HAST plugins
-- [ ] Notion component map (PascalCase rename) works with Sätteri's oxc-based MDX
-- [ ] User-provided rehype plugins (math, mermaid) documented as requiring Sätteri-compatible alternatives
+- [ ] Verify whether `rehypeRaw` is needed with Sätteri (document finding)
+- [ ] Verify PascalCase rename behavior with oxc-based MDX compilation
+- [ ] `rehypeNotionColorPlugin` ported to Sätteri HAST plugin
+- [ ] `rehypeBlockElementsPlugin` + `rehypeInlineMentionsPlugin` ported (or redesigned if oxc behaves differently)
+- [ ] `rehypeSlug` equivalent ported to Sätteri HAST plugin
+- [ ] `rehypeTocPlugin` ported to Sätteri HAST plugin
+- [ ] Decision documented on whether `resolvePageLinksPlugin` is needed for the Sätteri path
+- [ ] User-provided rehype plugins (`rehypeKatex`, `rehypeMermaid`) documented as incompatible — users must use Sätteri-compatible alternatives when opting into Sätteri
 <!-- SECTION:DESCRIPTION:END -->
