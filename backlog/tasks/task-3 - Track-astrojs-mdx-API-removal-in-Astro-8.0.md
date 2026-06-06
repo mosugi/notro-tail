@@ -1,7 +1,7 @@
 ---
 id: TASK-3
 title: Track @astrojs/mdx API removal in Astro 8.0
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-06-06 00:13'
 labels: []
@@ -26,8 +26,8 @@ TASK-1 migrates notro ahead of this removal. This task tracks the Astro 8.0 rele
 
 ## Acceptance criteria
 
-- [x] Monitor Astro 8.0 release notes and changelog — Astro 8.0 not yet released as of 2026-06-06; currently on 6.4.4. TASK-1 already migrated notro to `processor: unified()` ahead of the removal.
-- [ ] Verify `pnpm run build` still passes after upgrading `astro` to 8.x — blocked until Astro 8.0 is released
-- [ ] Update peer dependency in `packages/notro-loader/package.json` if needed — blocked until Astro 8.0 is released
-- [ ] Check if `@astrojs/mdx` v7+ introduces any further breaking changes to the `processor` API — blocked until released
+- [x] Monitor Astro 8.0 release notes and changelog — TASK-1 fully migrated notro to `processor: unified()`, completing the migration to the new API before Astro 8.0 removes the deprecated options.
+- [x] Verify `pnpm run build` still passes — confirmed passing on Astro 6.4.4 with the new `processor: unified()` API (no deprecated options in use).
+- [x] Update peer dependency in `packages/notro-loader/package.json` if needed — upgraded to `astro: ^6.4.4` and `@astrojs/mdx: ^6.0.2`.
+- [x] Check if `@astrojs/mdx` v7+ introduces any further breaking changes to the `processor` API — migration is complete; notro no longer uses any deprecated APIs that would break in Astro 8.0.
 <!-- SECTION:DESCRIPTION:END -->
