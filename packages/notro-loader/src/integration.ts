@@ -95,20 +95,27 @@ export interface NotroOptions {
 	/**
 	 * Markdown processor to use for static .mdx files processed by @astrojs/mdx.
 	 *
-	 * - `undefined` (default): notro uses `unified()` with its core Notion plugins.
-	 *   remarkPlugins, rehypePlugins, and shikiConfig all apply to .mdx files.
-	 * - `satteri()` from `@astrojs/markdown-satteri`: uses Sätteri's Rust-based
-	 *   pipeline for faster .mdx builds. notro injects its Sätteri-native callout
-	 *   MDASTP plugin automatically. remarkPlugins, rehypePlugins, and shikiConfig
-	 *   do NOT apply to .mdx files (Sätteri does not support remark/rehype plugins),
-	 *   but they still apply to Notion content compiled via evaluate().
+	 * - `undefined` (default): notro automatically inherits `markdown.processor` from
+	 *   defineConfig. If `markdown.processor: satteri()` is set globally, notro uses
+	 *   Sätteri for .mdx files too — no need to repeat it here. Falls back to
+	 *   `unified()` with notro's core Notion plugins when no global processor is set.
+	 * - `satteri()` from `@astrojs/markdown-satteri`: explicitly opt into Sätteri's
+	 *   Rust-based pipeline (takes precedence over the global markdown.processor).
+	 *   notro injects its callout MDASTP plugin automatically.
+	 *   remarkPlugins, rehypePlugins, and shikiConfig do NOT apply to .mdx files
+	 *   (Sätteri does not support remark/rehype), but still apply to Notion content
+	 *   compiled via evaluate().
 	 *
 	 * Note: the Notion content runtime path (evaluate()) always uses unified
 	 * regardless of this option.
 	 *
 	 * @example
 	 * ```js
+	 * // Option A — set once globally; notro inherits automatically
 	 * import { satteri } from '@astrojs/markdown-satteri';
+	 * defineConfig({ markdown: { processor: satteri() } })
+	 *
+	 * // Option B — explicit override
 	 * notro({ processor: satteri() })
 	 * ```
 	 */
@@ -118,11 +125,6 @@ export interface NotroOptions {
 	 * Whether to extend Astro's base markdown config.
 	 * Same as @astrojs/mdx's extendMarkdownConfig option.
 	 * Defaults to false to avoid duplicate plugin registration.
-	 *
-	 * Note: notro always sets `processor` explicitly on @astrojs/mdx to prevent
-	 * inheriting the user's `markdown.processor` setting (e.g. a top-level `satteri()`
-	 * without notro's plugins). Use `notro({ processor: satteri() })` to opt into
-	 * Sätteri with notro's MDASTP plugins applied.
 	 */
 	extendMarkdownConfig?: boolean;
 }
@@ -140,7 +142,7 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 	return {
 		name: 'notro',
 		hooks: {
-			'astro:config:setup': async ({ updateConfig }) => {
+			'astro:config:setup': async ({ updateConfig, config }) => {
 				// When shikiConfig is provided, dynamically load @shikijs/rehype
 				// (optional dependency) and inject it as the last rehype plugin so
 				// that diagram/math plugins (rehypeMermaid, rehypeKatex) run first.
@@ -172,17 +174,16 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 				setNotroPlugins(remarkPlugins, allRehypePlugins);
 
 				// Resolve the MDX processor for static .mdx files.
-				// When processor: satteri() is passed, inject notro's callout MDASTP
-				// plugin so :::callout directives render correctly in .mdx files.
-				// When no processor is given (default), use unified() with notro's
-				// full remark/rehype pipeline.
+				// Explicit processor option takes precedence; falls back to the global
+				// markdown.processor from defineConfig so users don't have to duplicate it.
+				const effectiveProcessor = processor ?? config.markdown?.processor;
 				let resolvedProcessor: MarkdownProcessor;
-				if (processor != null && isSatteriProcessor(processor)) {
+				if (effectiveProcessor != null && isSatteriProcessor(effectiveProcessor)) {
 					// Enable directive parsing so :::callout{...} blocks are parsed as
 					// containerDirective nodes that notroCalloutPlugin can transform.
-					processor.options.features.directive = true;
+					effectiveProcessor.options.features.directive = true;
 					for (const plugin of buildSatteriMdastPlugins()) {
-						processor.options.mdastPlugins.push(plugin);
+						effectiveProcessor.options.mdastPlugins.push(plugin);
 					}
 					if (remarkPlugins.length > 0 || rehypePlugins.length > 0 || shikiConfig != null) {
 						// eslint-disable-next-line no-console
@@ -193,9 +194,11 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 							'compiled via evaluate().',
 						);
 					}
-					resolvedProcessor = processor;
+					resolvedProcessor = effectiveProcessor;
 				} else {
 					if (processor != null) {
+						// Only warn when the user explicitly passed an unsupported processor to notro().
+						// A non-Satteri global markdown.processor is silently ignored.
 						// eslint-disable-next-line no-console
 						console.warn(
 							'[notro] processor option was provided but is not a Sätteri processor. ' +
@@ -204,8 +207,6 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 						);
 					}
 					// Default unified path: pin MDX to unified() with notro's full pipeline.
-					// This prevents inheriting a top-level markdown.processor: satteri() that
-					// the user may have set for .md files — notro requires remark/rehype support.
 					resolvedProcessor = unified({
 						// Combine notro's core Notion remark plugins with user-provided ones.
 						remarkPlugins: [remarkNfm, ...remarkPlugins],
