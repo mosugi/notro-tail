@@ -32,9 +32,10 @@
  * });
  * ```
  *
- * When no options are provided, notro only applies its Notion-core plugins
- * (remarkNfm, remarkGfm, rehypeRaw, rehypeSlug, etc.). Rich rendering features
- * like math, syntax highlighting, and diagrams are opt-in via the options above.
+ * When no options are provided, notro handles Notion content via string-level
+ * preprocessing (callout→JSX, element renaming, heading IDs, etc.) with no
+ * remark/rehype plugins needed. Rich rendering features like math, syntax
+ * highlighting, and diagrams are opt-in via the options above.
  */
 
 import type { AstroIntegration } from 'astro';
@@ -43,7 +44,6 @@ import type { MarkdownProcessor } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
 import { unified } from '@astrojs/markdown-remark';
 import { isSatteriProcessor } from '@astrojs/markdown-satteri';
-import { remarkNfm } from 'remark-notro';
 import { setNotroPlugins } from './utils/notro-config.ts';
 import { buildSatteriMdastPlugins } from './utils/satteri-plugins.ts';
 
@@ -206,10 +206,16 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 							'The processor has been ignored and unified() will be used instead.',
 						);
 					}
-					// Default unified path: pin MDX to unified() with notro's full pipeline.
+					// Default unified path: pin MDX to unified() with user-provided plugins.
+					// Notion-specific preprocessing (callout→JSX, element renaming, etc.)
+					// is now handled entirely at string level by preprocessNotionMarkdown()
+					// in compile-mdx.ts — no remark plugins needed for Notion content.
+					// Static .mdx files are also processed by this unified() instance,
+					// but they don't contain Notion-specific syntax, so no Notion plugins
+					// are needed here either.
 					resolvedProcessor = unified({
-						// Combine notro's core Notion remark plugins with user-provided ones.
-						remarkPlugins: [remarkNfm, ...remarkPlugins],
+						// User-provided remark plugins (e.g. remark-math).
+						remarkPlugins,
 						// User and built-in rehype plugins (math, diagrams, shiki, etc.).
 						rehypePlugins: allRehypePlugins,
 					});

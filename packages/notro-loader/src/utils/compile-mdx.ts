@@ -1,14 +1,16 @@
 /**
  * MDX → Astro component compiler.
  *
- * Astro integration layer: wires the MDX plugin pipeline from mdx-pipeline.ts
- * into Astro's jsx-runtime, registers the result with Astro's component
- * renderer, and caches compiled output by content hash.
+ * Transforms Notion markdown into an Astro component via two passes:
+ * 1. preprocessNotionMarkdown() + applyMdxContext() — string-level transforms
+ *    that produce clean MDX JSX (callouts, element renames, heading IDs, etc.)
+ * 2. evaluate() from @mdx-js/mdx — compiles the clean MDX into an Astro component
+ *    using Astro's jsx-runtime. No remark or rehype plugins are needed.
  */
 
 import { evaluate } from '@mdx-js/mdx';
 import { createHash } from 'node:crypto';
-import { buildMdxPlugins } from './mdx-pipeline.ts';
+import { preprocessNotionMarkdown, applyMdxContext } from './notion-preprocess.ts';
 import type { LinkToPages } from '../types.ts';
 
 // Import Astro's jsx-runtime so evaluate() produces Astro VNodes.
@@ -41,23 +43,30 @@ export async function compileMdxForAstro(
 	options: { linkToPages?: LinkToPages } = {},
 ) {
 	const { linkToPages = {} } = options;
-	const { remarkPlugins, rehypePlugins } = buildMdxPlugins(linkToPages);
+
+	// Two-pass string preprocessing produces clean MDX that evaluate() can
+	// compile without any remark or rehype plugins:
+	//   1. preprocessNotionMarkdown() — structural fixes, callout→JSX, element
+	//      renaming, color→className, strikethrough, task lists, void elements
+	//   2. applyMdxContext() — heading ID anchors, TOC population, page link resolution
+	const processedSource = applyMdxContext(
+		preprocessNotionMarkdown(mdxSource),
+		{ linkToPages },
+	);
 
 	// evaluate() compiles + executes the MDX using Astro's jsx-runtime,
 	// producing a function that returns Astro VNodes.
 	// Wrapped in try-catch so a broken page does not crash the entire build.
 	let mod: Awaited<ReturnType<typeof evaluate>>;
 	try {
-		mod = await evaluate(mdxSource, {
+		mod = await evaluate(processedSource, {
 			jsx,
 			jsxs,
 			Fragment,
-			remarkPlugins,
-			rehypePlugins,
 		});
 	} catch (error) {
 		console.warn(
-			`[notro] MDX compilation failed for markdown (${mdxSource.length} chars):`,
+			`[notro] MDX compilation failed for markdown (${processedSource.length} chars):`,
 			error,
 		);
 		// Return a fallback component that renders an error message so the build

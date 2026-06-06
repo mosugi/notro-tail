@@ -1,7 +1,7 @@
 ---
 id: TASK-10
 title: "Replace evaluate() remark/rehype pipeline with string-level MDX preprocessing"
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06'
 labels: [refactor, breaking-change]
@@ -151,14 +151,14 @@ This is a **breaking change** → `major` version bump for `notro-loader`.
 
 ## Acceptance criteria
 
-- [ ] `evaluate()` called with `remarkPlugins: []` and `rehypePlugins: []` for Notion content
-- [ ] Callout blocks render correctly (icon, color, children)
-- [ ] Notion color annotations render with correct Tailwind classes
-- [ ] Block elements (Video, Columns, TableOfContents, etc.) render as components
-- [ ] Inline mentions (MentionUser, MentionDate, etc.) render as components
-- [ ] Heading anchors work (TOC links navigate to correct headings)
-- [ ] TableOfContents populates correctly
-- [ ] Page links resolve to internal URLs
-- [ ] `remark-notro`, `rehype-raw`, `rehype-slug`, `unist-util-visit` removed from `notro-loader/package.json`
-- [ ] `pnpm run build` passes
+- [x] `evaluate()` called with `remarkPlugins: []` and `rehypePlugins: []` for Notion content
+- [x] Callout blocks render correctly (icon, color, children)
+- [x] Notion color annotations render with correct Tailwind classes
+- [x] Block elements (Video, Columns, TableOfContents, etc.) render as components
+- [x] Inline mentions (MentionUser, MentionDate, etc.) render as components
+- [x] Heading anchors work (TOC links navigate to correct headings)
+- [x] TableOfContents populates correctly
+- [x] Page links resolve to internal URLs
+- [x] `remark-notro`, `rehype-raw`, `rehype-slug`, `unist-util-visit` removed from `notro-loader/package.json`
+- [x] `pnpm run build` passes
 <!-- SECTION:DESCRIPTION:END -->
