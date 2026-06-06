@@ -39,9 +39,13 @@
 
 import type { AstroIntegration } from 'astro';
 import type { PluggableList } from 'unified';
+import type { MarkdownProcessor } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
+import { unified } from '@astrojs/markdown-remark';
+import { isSatteriProcessor } from '@astrojs/markdown-satteri';
 import { remarkNfm } from 'remark-notro';
 import { setNotroPlugins } from './utils/notro-config.ts';
+import { notroCalloutPlugin } from './utils/satteri-plugins.ts';
 
 /**
  * Options for the notro() Astro integration.
@@ -50,7 +54,6 @@ import { setNotroPlugins } from './utils/notro-config.ts';
 export interface NotroOptions {
 	/**
 	 * Remark plugins to add on top of notro's core Notion plugins.
-	 * Same as @astrojs/mdx's remarkPlugins option.
 	 * Applied to both the runtime Notion content path and static .mdx files.
 	 *
 	 * @example [remarkMath]  // from 'notro-math'
@@ -59,7 +62,6 @@ export interface NotroOptions {
 
 	/**
 	 * Rehype plugins to add after notro's core Notion plugins.
-	 * Same as @astrojs/mdx's rehypePlugins option.
 	 * Applied to both the runtime Notion content path and static .mdx files.
 	 *
 	 * @example [[rehypeMermaid, { theme: 'github-dark' }], rehypeKatex]
@@ -91,9 +93,36 @@ export interface NotroOptions {
 	viteExternals?: string[];
 
 	/**
+	 * Markdown processor to use for static .mdx files processed by @astrojs/mdx.
+	 *
+	 * - `undefined` (default): notro uses `unified()` with its core Notion plugins.
+	 *   remarkPlugins, rehypePlugins, and shikiConfig all apply to .mdx files.
+	 * - `satteri()` from `@astrojs/markdown-satteri`: uses Sätteri's Rust-based
+	 *   pipeline for faster .mdx builds. notro injects its Sätteri-native callout
+	 *   MDASTP plugin automatically. remarkPlugins, rehypePlugins, and shikiConfig
+	 *   do NOT apply to .mdx files (Sätteri does not support remark/rehype plugins),
+	 *   but they still apply to Notion content compiled via evaluate().
+	 *
+	 * Note: the Notion content runtime path (evaluate()) always uses unified
+	 * regardless of this option.
+	 *
+	 * @example
+	 * ```js
+	 * import { satteri } from '@astrojs/markdown-satteri';
+	 * notro({ processor: satteri() })
+	 * ```
+	 */
+	processor?: MarkdownProcessor;
+
+	/**
 	 * Whether to extend Astro's base markdown config.
 	 * Same as @astrojs/mdx's extendMarkdownConfig option.
 	 * Defaults to false to avoid duplicate plugin registration.
+	 *
+	 * Note: notro always sets `processor` explicitly on @astrojs/mdx to prevent
+	 * inheriting the user's `markdown.processor` setting (e.g. a top-level `satteri()`
+	 * without notro's plugins). Use `notro({ processor: satteri() })` to opt into
+	 * Sätteri with notro's MDASTP plugins applied.
 	 */
 	extendMarkdownConfig?: boolean;
 }
@@ -103,6 +132,7 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 		remarkPlugins = [],
 		rehypePlugins = [],
 		shikiConfig,
+		processor,
 		extendMarkdownConfig = false,
 		viteExternals = [],
 	} = options;
@@ -136,10 +166,41 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 
 				// Share user-provided plugins with the runtime compileMdxCached() path
 				// via the module-level config store in notro-config.ts.
-				// Both the static .mdx path (via @astrojs/mdx below) and the runtime
-				// Notion content path (via buildMdxPlugins → getNotroPlugins) will
-				// use the same plugin configuration.
+				// The Notion content path (evaluate()) always uses unified regardless
+				// of the processor option, so remarkPlugins and rehypePlugins always
+				// apply there.
 				setNotroPlugins(remarkPlugins, allRehypePlugins);
+
+				// Resolve the MDX processor for static .mdx files.
+				// When processor: satteri() is passed, inject notro's callout MDASTP
+				// plugin so :::callout directives render correctly in .mdx files.
+				// When no processor is given (default), use unified() with notro's
+				// full remark/rehype pipeline.
+				let resolvedProcessor: MarkdownProcessor;
+				if (processor != null && isSatteriProcessor(processor)) {
+					// Sätteri path: inject notro's callout MDASTP plugin.
+					processor.options.mdastPlugins.push(notroCalloutPlugin);
+					if (remarkPlugins.length > 0 || rehypePlugins.length > 0 || shikiConfig != null) {
+						// eslint-disable-next-line no-console
+						console.warn(
+							'[notro] remarkPlugins, rehypePlugins, and shikiConfig are not applied to ' +
+							'static .mdx files when processor: satteri() is active — Sätteri does not ' +
+							'support remark/rehype plugins. These options still apply to Notion content ' +
+							'compiled via evaluate().',
+						);
+					}
+					resolvedProcessor = processor;
+				} else {
+					// Default unified path: pin MDX to unified() with notro's full pipeline.
+					// This prevents inheriting a top-level markdown.processor: satteri() that
+					// the user may have set for .md files — notro requires remark/rehype support.
+					resolvedProcessor = unified({
+						// Combine notro's core Notion remark plugins with user-provided ones.
+						remarkPlugins: [remarkNfm, ...remarkPlugins],
+						// User and built-in rehype plugins (math, diagrams, shiki, etc.).
+						rehypePlugins: allRehypePlugins,
+					});
+				}
 
 				// Inject @astrojs/mdx by appending to the integrations array via
 				// updateConfig(). Astro's config setup loop re-checks the array length
@@ -147,10 +208,7 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 				// own astro:config:setup hook runs immediately after notro's hook.
 				updateConfig({
 					integrations: [mdx({
-						// Combine notro's core Notion remark plugins with user-provided ones.
-						remarkPlugins: [remarkNfm, ...remarkPlugins],
-						// User and built-in rehype plugins (math, diagrams, shiki, etc.).
-						rehypePlugins: allRehypePlugins,
+						processor: resolvedProcessor,
 						extendMarkdownConfig,
 					// `as any` is needed because Astro's TypeScript types for updateConfig
 					// only accept AstroIntegration[], but @astrojs/mdx returns its own

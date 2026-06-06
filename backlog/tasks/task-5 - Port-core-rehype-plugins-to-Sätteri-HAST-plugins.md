@@ -1,7 +1,7 @@
 ---
 id: TASK-5
 title: Port core rehype plugins to Sätteri HAST plugins
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06 00:14'
 labels: []

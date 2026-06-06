@@ -1,9 +1,10 @@
 ---
 id: TASK-1
 title: 'Migrate @astrojs/mdx integration to processor: unified() API'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06 00:13'
+updated_date: '2026-06-06 00:51'
 labels: []
 dependencies: []
 priority: high
@@ -63,10 +64,10 @@ top-level `markdown.processor` setting.
 
 ## Acceptance criteria
 
-- [ ] `integration.ts` uses `processor: unified()` instead of deprecated top-level options
-- [ ] No deprecation warnings in `pnpm run build` output
-- [ ] `pnpm run build` passes
-- [ ] Comment added explaining why `processor: unified()` is explicit (not just default)
-- [ ] `NotroOptions` JSDoc updated to mention Sätteri incompatibility
-- [ ] Changeset added (patch for notro-loader)
+- [x] `integration.ts` uses `processor: unified()` instead of deprecated top-level options
+- [x] No deprecation warnings in `pnpm run build` output
+- [x] `pnpm run build` passes
+- [x] Comment added explaining why `processor: unified()` is explicit (not just default)
+- [x] `NotroOptions` JSDoc updated to mention Sätteri incompatibility
+- [x] Changeset added (patch for notro-loader)
 <!-- SECTION:DESCRIPTION:END -->

@@ -1,7 +1,7 @@
 ---
 id: TASK-4
 title: Port remarkNfm to Sätteri MDASTP plugin
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06 00:14'
 labels: []

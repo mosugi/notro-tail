@@ -1,7 +1,7 @@
 ---
 id: TASK-6
 title: Add notro() processor option for Sätteri support
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-06 00:14'
 labels: []
