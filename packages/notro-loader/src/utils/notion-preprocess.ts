@@ -279,12 +279,13 @@ export function preprocessNotionMarkdown(markdown: string): string {
 	result = result.replace(/(<\/(?:p|h[1-6])>)\n([^\n])/g, '$1\n\n$2');
 
 	// Fix 4: <table_of_contents/> → <TableOfContents/>
-	// MDX parses PascalCase JSX natively; no <div> wrapper or passThrough needed.
+	// Blank lines are added around the tag so MDX parses it as a block-level JSX
+	// element instead of inline (MDX requires blank lines around block JSX).
 	result = result.replace(
 		/^<table[_-]of[_-]contents(\s[^/>\s][^/>]*)?\s*\/?>$/gm,
 		(_, attrs: string | undefined) => {
 			const innerAttrs = attrs ? ' ' + attrs.trim() : '';
-			return `<TableOfContents${innerAttrs}/>`;
+			return `\n\n<TableOfContents${innerAttrs}/>\n\n`;
 		},
 	);
 
@@ -380,13 +381,21 @@ export function preprocessNotionMarkdown(markdown: string): string {
 	// e.g. <video> → <Video>, <mention-user> → <MentionUser>
 	// PascalCase names make MDX generate _jsx(Video, ...) which consults the
 	// components map; lowercase names generate _jsx("video", ...) which bypasses it.
-	result = result.replace(
-		ELEMENT_RENAME_RE,
-		(_, prefix: string, name: string, suffix: string) => {
-			const renamed = BLOCK_RENAMES.get(name) ?? name;
-			return `${prefix}${renamed}${suffix}`;
-		},
-	);
+	// Protected from fenced code blocks and inline code spans to avoid renaming
+	// element names that appear in code examples (e.g. `<table_of_contents/>`).
+	result = result
+		.split(/((?:^|\n)```[\s\S]*?(?:```\s*(?:\n|$)|$)|`[^`\n]+`)/g)
+		.map((segment, i) => {
+			if (i % 2 === 1) return segment; // protected code block or inline code span
+			return segment.replace(
+				ELEMENT_RENAME_RE,
+				(_, prefix: string, name: string, suffix: string) => {
+					const renamed = BLOCK_RENAMES.get(name) ?? name;
+					return `${prefix}${renamed}${suffix}`;
+				},
+			);
+		})
+		.join('');
 
 	// Fix 15: Convert **bold** to <strong> to work around CJK punctuation rules.
 	result = result
@@ -512,15 +521,25 @@ function populateToc(markdown: string, headings: HeadingEntry[]): string {
 	const tocHtml = `<ul data-toc-list="">\n${items}\n</ul>`;
 
 	// Replace all <TableOfContents.../> occurrences with the populated version.
-	return markdown.replace(
-		/<TableOfContents([^/]*)\s*\/>/g,
-		(_, extraAttrs: string) => {
-			const attrStr = extraAttrs.trim();
-			return attrStr
-				? `<TableOfContents ${attrStr}>\n${tocHtml}\n</TableOfContents>`
-				: `<TableOfContents>\n${tocHtml}\n</TableOfContents>`;
-		},
-	);
+	// Blank lines around the block ensure MDX parses it as block-level JSX.
+	// Split on inline code spans to avoid expanding <TableOfContents/> that
+	// appears inside backtick code spans (e.g. in code examples).
+	return markdown
+		.split(/(`[^`\n]+`)/g)
+		.map((part, i) => {
+			if (i % 2 === 1) return part; // protected inline code span
+			return part.replace(
+				/<TableOfContents([^/]*)\s*\/>/g,
+				(_, extraAttrs: string) => {
+					const attrStr = extraAttrs.trim();
+					const block = attrStr
+						? `<TableOfContents ${attrStr}>\n${tocHtml}\n</TableOfContents>`
+						: `<TableOfContents>\n${tocHtml}\n</TableOfContents>`;
+					return `\n\n${block}\n\n`;
+				},
+			);
+		})
+		.join('');
 }
 
 function resolveNotionUrl(

@@ -85,6 +85,17 @@ describe("preprocessNotionMarkdown: table_of_contents rename", () => {
 		expect(result).toContain("<TableOfContents/>");
 		expect(result).not.toContain("table_of_contents");
 	});
+
+	it("adds blank lines around <TableOfContents/> for block-level MDX parsing", () => {
+		// Without blank lines before/after, MDX parses <TableOfContents> as inline
+		// within a paragraph and errors with "Expected a closing tag before end of paragraph".
+		const input = "Some text\n<table_of_contents/>\nMore text";
+		const result = preprocessNotionMarkdown(input);
+		// Must have blank line BEFORE the tag
+		expect(result).toMatch(/\n\n<TableOfContents/);
+		// Must have blank line AFTER the tag
+		expect(result).toMatch(/<TableOfContents[^>]*\/>\n\n/);
+	});
 });
 
 // ============================================================
@@ -118,6 +129,24 @@ describe("preprocessNotionMarkdown: element renaming", () => {
 		const result = preprocessNotionMarkdown(input);
 		expect(result).toContain("<TableColgroup");
 		expect(result).toContain("<TableCol");
+	});
+
+	it("does not rename elements inside inline code spans", () => {
+		// Elements inside backtick spans must stay as-is so MDX treats them as literal text.
+		// Renaming e.g. <table_of_contents/> inside a code span would cause populateToc()
+		// to expand it into the full TOC block, breaking the surrounding structure.
+		const input = 'The `<table_of_contents/>` tag is used for TOC.';
+		const result = preprocessNotionMarkdown(input);
+		expect(result).toContain("`<table_of_contents/>`");
+		expect(result).not.toContain("`<TableOfContents");
+	});
+
+	it("does not rename elements inside fenced code blocks", () => {
+		const input = "```\n<video src=\"url\"/>\n<table>\n```";
+		const result = preprocessNotionMarkdown(input);
+		// Inside code block, names should be unchanged
+		expect(result).toContain("<video");
+		expect(result).toContain("<table>");
 	});
 });
 
@@ -222,6 +251,27 @@ describe("applyMdxContext: TOC population", () => {
 	it("leaves <TableOfContents/> unchanged when there are no headings", () => {
 		const result = applyMdxContext("No headings here.\n\n<TableOfContents/>");
 		expect(result).toContain("<TableOfContents/>");
+	});
+
+	it("surrounds expanded <TableOfContents> block with blank lines", () => {
+		// Ensures MDX parses the multi-line block as block-level JSX (not inline).
+		const input = "<TableOfContents/>\n\n## Section One";
+		const result = applyMdxContext(input);
+		// expanded block must be preceded by blank line
+		expect(result).toMatch(/\n\n<TableOfContents>/);
+		// expanded block must be followed by blank line
+		expect(result).toMatch(/<\/TableOfContents>\n\n/);
+	});
+
+	it("does not expand <TableOfContents/> inside inline code spans", () => {
+		// If the tag is inside a backtick span (e.g. in a code example in a table cell),
+		// populateToc() must leave it unexpanded to avoid breaking the surrounding structure.
+		const input = "The `<TableOfContents/>` tag. \n\n## Section One";
+		const result = applyMdxContext(input);
+		// The code span must remain intact
+		expect(result).toContain("`<TableOfContents/>`");
+		// The TOC should NOT have been expanded inside the code span
+		expect(result).not.toMatch(/`\s*\n\n<TableOfContents>/);
 	});
 });
 
