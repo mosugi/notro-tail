@@ -56,10 +56,7 @@ export interface NotroOptions {
 
 	/**
 	 * Shiki syntax highlighting configuration for static `.mdx` files.
-	 * When provided, notro sets `markdown.shikiConfig` in the Astro config
-	 * so the Sätteri MDX processor picks it up automatically.
-	 *
-	 * Alternatively, set `markdown.shikiConfig` directly in `defineConfig`.
+	 * Passed directly to `@astrojs/mdx` as `syntaxHighlight: 'shiki'` + `shikiConfig`.
 	 *
 	 * @example { theme: 'github-dark' }
 	 * @example { themes: { light: 'github-light', dark: 'github-dark' } }
@@ -77,9 +74,9 @@ export interface NotroOptions {
 	viteExternals?: string[];
 
 	/**
-	 * Whether to extend Astro's base markdown config (shikiConfig, syntaxHighlight).
-	 * Defaults to `true` when `shikiConfig` is provided so it flows to the Sätteri
-	 * MDX processor automatically. Set explicitly to control inheritance.
+	 * Whether to extend Astro's base markdown config.
+	 * Defaults to `false`. Set to `true` to inherit `gfm`, `smartypants`, etc.
+	 * from the top-level `markdown` config in `defineConfig`.
 	 */
 	extendMarkdownConfig?: boolean;
 }
@@ -93,10 +90,7 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 		viteExternals = [],
 	} = options;
 
-	// extendMarkdownConfig defaults to true when shikiConfig is set so the
-	// Sätteri MDX processor inherits it from markdown config automatically.
-	// Otherwise defaults to false to avoid inheriting legacy markdown settings.
-	const resolvedExtendMarkdownConfig = extendMarkdownConfig ?? (shikiConfig != null);
+	const resolvedExtendMarkdownConfig = extendMarkdownConfig ?? false;
 
 	return {
 		name: 'notro',
@@ -111,26 +105,20 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 					hastPlugins: [...hastPlugins],
 				});
 
-				// When shikiConfig is provided, propagate it to Astro's markdown config
-				// so the Sätteri MDX processor can create a Shiki highlighter for it.
-				// This relies on extendMarkdownConfig: true in the mdx() call below.
-				if (shikiConfig != null) {
-					updateConfig({
-						markdown: {
-							syntaxHighlight: 'shiki',
-							shikiConfig,
-						},
-					});
-				}
-
 				// Inject @astrojs/mdx by appending to the integrations array via
 				// updateConfig(). Astro's config setup loop re-checks the array length
 				// each iteration, so the injected MDX integration is picked up and its
 				// own astro:config:setup hook runs immediately after notro's hook.
+				//
+				// Pass syntaxHighlight + shikiConfig directly to mdx() so they are
+				// applied as first-class MdxOptions (not inherited from markdown config).
+				// This ensures the Sätteri MDX processor creates a Shiki highlighter
+				// without relying on updateConfig({ markdown: {...} }) propagation.
 				updateConfig({
 					integrations: [mdx({
 						processor: satteriProcessor,
 						extendMarkdownConfig: resolvedExtendMarkdownConfig,
+						...(shikiConfig != null ? { syntaxHighlight: 'shiki', shikiConfig } : {}),
 					// `as any` is needed because Astro's TypeScript types for updateConfig
 					// only accept AstroIntegration[], but @astrojs/mdx returns its own
 					// subtype that is structurally compatible but not assignable.
