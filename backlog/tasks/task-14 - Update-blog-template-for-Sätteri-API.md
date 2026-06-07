@@ -1,7 +1,7 @@
 ---
 id: TASK-14
 title: Update blog template for Sätteri-based notro API
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-07'
 labels: [chore]

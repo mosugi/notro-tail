@@ -1,7 +1,7 @@
 ---
 id: TASK-13
 title: Switch integration.ts default to Sätteri and redesign NotroOptions (breaking)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-07'
 labels: [refactor, breaking-change]

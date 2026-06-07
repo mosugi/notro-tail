@@ -4,9 +4,7 @@ import partytown from "@astrojs/partytown";
 import tailwindcss from "@tailwindcss/vite";
 import { notionImageService } from "notro-loader/image-service";
 import { notro } from "notro-loader/integration";
-import { rehypeMermaid } from "rehype-beautiful-mermaid";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import { satteriMermaidPlugin } from "rehype-beautiful-mermaid/satteri";
 
 // To enable SSR, install the adapter for your platform and uncomment the relevant lines:
 // - Vercel:     npm i @astrojs/vercel     → import vercel from "@astrojs/vercel";
@@ -45,13 +43,15 @@ export default defineConfig({
 
   integrations: [
     notro({
-      // Shiki is injected last automatically, after rehypeMermaid and rehypeKatex.
+      // Shiki syntax highlighting is configured here and inherited by the
+      // Sätteri MDX processor via extendMarkdownConfig: true (auto-set when
+      // shikiConfig is provided).
       shikiConfig: { theme: "github-dark" },
-      remarkPlugins: [remarkMath],
-      rehypePlugins: [
-        [rehypeMermaid, { theme: "github-dark" }],
-        rehypeKatex,
-      ],
+      // Mermaid diagram rendering via the Sätteri HAST plugin.
+      hastPlugins: [satteriMermaidPlugin({ theme: "github-dark" })],
+      // Note: math in static .mdx files (remark-math + rehype-katex) is not
+      // yet supported on the Sätteri path. Notion content supports math via
+      // string-level preprocessing (preprocessNotionMarkdown).
     }),
     sitemap(),
     // Offloads third-party scripts (Google Analytics) to a web worker via Partytown.

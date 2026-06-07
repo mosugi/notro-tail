@@ -1,7 +1,7 @@
 ---
 id: TASK-11
 title: Research Sätteri code highlighting and implement HAST plugin (replaces shikiConfig)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-07'
 labels: [research, feat]

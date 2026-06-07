@@ -1,7 +1,7 @@
 ---
 id: TASK-15
 title: Major version bump and changeset for Sätteri-as-default
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-07'
 labels: [chore, breaking-change]

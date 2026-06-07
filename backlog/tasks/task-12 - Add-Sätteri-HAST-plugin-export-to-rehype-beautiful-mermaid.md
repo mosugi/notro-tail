@@ -1,7 +1,7 @@
 ---
 id: TASK-12
 title: Add Sätteri HAST plugin export to rehype-beautiful-mermaid
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-06-07'
 labels: [feat]

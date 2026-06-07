@@ -1,23 +1,17 @@
 /**
- * Sätteri MDAST/HAST plugins for Notion content support.
- *
- * These plugins are the Sätteri equivalents of notro's remark/rehype plugins.
- * They are used when notro() is configured with processor: satteri().
+ * Sätteri MDASTP plugins bundled into notro's default pipeline.
  *
  * Scope: static .mdx files processed by @astrojs/mdx with Sätteri.
- * The Notion runtime path (evaluate()) always uses unified regardless.
+ * The Notion runtime path (evaluate()) uses string-level preprocessing
+ * (preprocessNotionMarkdown / applyMdxContext) and is unaffected.
  *
- * What needs porting vs what doesn't:
- * - preprocessNotionMarkdown() string fixes: NOT needed for user-authored .mdx files
+ * What is and isn't needed for user-authored .mdx files:
  * - callout directive → <callout> element: YES — users write :::callout in .mdx
- * - rehypeNotionColorPlugin: NOT needed (Notion API artifact, not in .mdx files)
- * - rehypeBlockElementsPlugin: NOT needed (Notion block types, not in .mdx files)
- * - rehypeInlineMentionsPlugin: NOT needed (Notion-specific)
- * - rehypeSlug: covered by satteriHeadingIdsPlugin built-in to @astrojs/mdx
- * - rehypeTocPlugin: NOT needed (<table_of_contents/> is a Notion block, not in .mdx)
- * - resolvePageLinksPlugin: NOT needed (Notion links, not in .mdx files)
+ * - Notion color/block/mention transforms: NOT needed (Notion API artifacts)
+ * - Heading IDs / TOC: covered by @astrojs/mdx's built-in Sätteri plugins
+ * - Page link resolution: NOT needed (Notion links, not in .mdx files)
  *
- * GFM strikethrough and task lists: built-in to Sätteri, no porting needed.
+ * GFM, math, and directives: controlled via Sätteri's Features option.
  */
 
 import { defineMdastPlugin } from 'satteri';

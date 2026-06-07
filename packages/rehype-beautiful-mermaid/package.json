@@ -21,7 +21,8 @@
   },
   "homepage": "https://notrotail.mosugi.com",
   "exports": {
-    ".": "./index.ts"
+    ".": "./index.ts",
+    "./satteri": "./src/satteri-mermaid.ts"
   },
   "files": [
     "dist"
@@ -50,7 +51,12 @@
     "beautiful-mermaid": ">=1.0.0"
   },
   "peerDependencies": {
-    "unified": ">=11.0.0"
+    "unified": ">=11.0.0",
+    "satteri": ">=0.8.0"
+  },
+  "peerDependenciesMeta": {
+    "unified": { "optional": true },
+    "satteri": { "optional": true }
   },
   "engines": {
     "node": ">=24.0.0"
