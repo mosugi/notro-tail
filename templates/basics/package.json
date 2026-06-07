@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
-    "astro": "^6.0.4",
+    "astro": "^6.4.4",
     "notro-loader": "^0.3.0",
     "tailwindcss": "^4.2.1",
     "zod": "^4.0.0"
