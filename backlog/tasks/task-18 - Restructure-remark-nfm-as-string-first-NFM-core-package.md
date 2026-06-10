@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-06-10'
 labels: [refactor, satteri, breaking-change]
-dependencies: []
+dependencies: [TASK-21]
 priority: high
 ordinal: 18000
 ---
@@ -13,6 +13,10 @@ ordinal: 18000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
+> **Superseded in part by TASK-21.**
+> The original plan to expose a `/satteri` entry point from remark-nfm is cancelled — the callout plugin stays in `notro-loader` and the package is deprecated (TASK-21). Only the deprecation work described in TASK-21 step 4 applies here. The restructure as a 3-layer standalone is no longer needed.
+
+
 ## Background
 
 After the Sätteri migration (TASK-10/13), `notro-loader` no longer depends on `remark-nfm`. The Notion runtime path is handled entirely by `notro-loader/src/utils/notion-preprocess.ts` (Fix 0–19, 597 lines), which started as an extension of remark-nfm's `transformer.ts` (Fix 0–9, 496 lines). The two implementations are now diverging forks of the same logic, and the published `remark-notro` package is orphaned from the monorepo's actual pipeline.

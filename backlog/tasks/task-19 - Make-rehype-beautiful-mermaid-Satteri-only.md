@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-06-10'
 labels: [refactor, satteri, breaking-change]
-dependencies: []
+dependencies: [TASK-21]
 priority: medium
 ordinal: 19000
 ---
@@ -13,6 +13,10 @@ ordinal: 19000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
+> **Superseded by TASK-21.**
+> Instead of keeping `rehype-beautiful-mermaid` as a Sätteri-only standalone package, the mermaid plugin will be absorbed into `notro-loader/mermaid` and the package deprecated. See TASK-21 for the full plan.
+
+
 ## Background
 
 `rehype-beautiful-mermaid` currently ships two entry points:

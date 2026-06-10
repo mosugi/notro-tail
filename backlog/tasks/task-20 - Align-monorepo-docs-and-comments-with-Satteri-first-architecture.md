@@ -5,7 +5,7 @@ status: To Do
 assignee: []
 created_date: '2026-06-10'
 labels: [docs, satteri]
-dependencies: [TASK-18, TASK-19]
+dependencies: [TASK-21]
 priority: medium
 ordinal: 20000
 ---
