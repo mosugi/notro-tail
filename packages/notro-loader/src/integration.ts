@@ -1,79 +1,62 @@
 /**
  * Astro integration for notro.
  *
- * Injects `@astrojs/mdx` with notro's plugin suite, which:
+ * Injects `@astrojs/mdx` with the Sätteri processor, which:
  * 1. Registers the `astro:jsx` renderer — required for `@mdx-js/mdx`'s `evaluate()`
  *    to work in Astro's SSG prerender pipeline.
- * 2. Configures any `.mdx` files in the project with the same remark/rehype
- *    plugins used by notro's runtime MDX compilation (see mdx-pipeline.ts).
+ * 2. Configures static `.mdx` files in the project with Sätteri's Rust-based
+ *    Markdown pipeline. User-provided MDASTP and HAST plugins apply here.
  *
- * The interface mirrors `@astrojs/mdx` so that Astro users can configure
- * notro with the same patterns documented in:
- * https://docs.astro.build/ja/guides/integrations-guide/mdx/
+ * Notion content (the runtime evaluate() path) is handled entirely at string
+ * level by preprocessNotionMarkdown() and applyMdxContext() in compile-mdx.ts —
+ * no remark/rehype or Sätteri plugins are applied there.
  *
  * Usage in astro.config.mjs:
  * ```js
  * import { notro } from 'notro/integration';
- * import { rehypeMermaid } from 'rehype-beautiful-mermaid';
- * import remarkMath from 'remark-math';
- * import rehypeKatex from 'rehype-katex';
+ * import { satteriMermaidPlugin } from 'rehype-beautiful-mermaid/satteri';
  *
  * export default defineConfig({
  *   integrations: [
  *     notro({
  *       shikiConfig: { theme: 'github-dark' },
- *       remarkPlugins: [remarkMath],
- *       rehypePlugins: [
- *         [rehypeMermaid, { theme: 'github-dark' }],
- *         rehypeKatex,
- *       ],
+ *       hastPlugins: [satteriMermaidPlugin({ theme: 'github-dark' })],
  *     }),
  *   ],
  * });
  * ```
- *
- * When no options are provided, notro only applies its Notion-core plugins
- * (remarkNfm, remarkGfm, rehypeRaw, rehypeSlug, etc.). Rich rendering features
- * like math, syntax highlighting, and diagrams are opt-in via the options above.
  */
 
 import type { AstroIntegration } from 'astro';
-import type { PluggableList } from 'unified';
+import type { MdastPluginDefinition, HastPluginDefinition } from 'satteri';
 import mdx from '@astrojs/mdx';
-import { remarkNfm } from 'remark-notro';
-import { setNotroPlugins } from './utils/notro-config.ts';
+import { satteri } from '@astrojs/markdown-satteri';
+import { buildSatteriMdastPlugins } from './utils/satteri-plugins.ts';
 
 /**
  * Options for the notro() Astro integration.
- * Mirrors the @astrojs/mdx interface for familiarity.
  */
 export interface NotroOptions {
 	/**
-	 * Remark plugins to add on top of notro's core Notion plugins.
-	 * Same as @astrojs/mdx's remarkPlugins option.
-	 * Applied to both the runtime Notion content path and static .mdx files.
+	 * Sätteri MDASTP plugins for static `.mdx` files.
+	 * These do NOT apply to runtime Notion content — Notion markdown is
+	 * preprocessed at string level by preprocessNotionMarkdown().
 	 *
-	 * @example [remarkMath]  // from 'notro-math'
+	 * @example [myMdastPlugin]
 	 */
-	remarkPlugins?: PluggableList;
+	mdastPlugins?: MdastPluginDefinition[];
 
 	/**
-	 * Rehype plugins to add after notro's core Notion plugins.
-	 * Same as @astrojs/mdx's rehypePlugins option.
-	 * Applied to both the runtime Notion content path and static .mdx files.
+	 * Sätteri HAST plugins for static `.mdx` files.
+	 * These do NOT apply to runtime Notion content.
 	 *
-	 * @example [[rehypeMermaid, { theme: 'github-dark' }], rehypeKatex]
+	 * @example [satteriMermaidPlugin({ theme: 'github-dark' })]
 	 */
-	rehypePlugins?: PluggableList;
+	hastPlugins?: HastPluginDefinition[];
 
 	/**
-	 * Shiki syntax highlighting configuration.
-	 * When provided, @shikijs/rehype is automatically injected as the last rehype
-	 * plugin so that other plugins (rehypeMermaid, rehypeKatex) run first.
-	 * Equivalent to appending `[rehypeShiki, shikiConfig]` to rehypePlugins.
-	 *
-	 * Requires @shikijs/rehype to be installed (optional dependency):
-	 *   npm install @shikijs/rehype
+	 * Shiki syntax highlighting configuration for static `.mdx` files.
+	 * Passed directly to `@astrojs/mdx` as `syntaxHighlight: 'shiki'` + `shikiConfig`.
 	 *
 	 * @example { theme: 'github-dark' }
 	 * @example { themes: { light: 'github-light', dark: 'github-dark' } }
@@ -82,8 +65,8 @@ export interface NotroOptions {
 
 	/**
 	 * Additional packages to add to Vite's ssr.external list.
-	 * Use this when a rehype/remark plugin dynamically imports a package that
-	 * needs to be resolved by Node.js's native ESM loader instead of Vite's
+	 * Use this when a HAST plugin dynamically imports a package that needs
+	 * to be resolved by Node.js's native ESM loader instead of Vite's
 	 * module runner (e.g. packages that use native binaries or dynamic imports).
 	 *
 	 * @example ['my-native-package']
@@ -92,66 +75,50 @@ export interface NotroOptions {
 
 	/**
 	 * Whether to extend Astro's base markdown config.
-	 * Same as @astrojs/mdx's extendMarkdownConfig option.
-	 * Defaults to false to avoid duplicate plugin registration.
+	 * Defaults to `false`. Set to `true` to inherit `gfm`, `smartypants`, etc.
+	 * from the top-level `markdown` config in `defineConfig`.
 	 */
 	extendMarkdownConfig?: boolean;
 }
 
 export function notro(options: NotroOptions = {}): AstroIntegration {
 	const {
-		remarkPlugins = [],
-		rehypePlugins = [],
+		mdastPlugins = [],
+		hastPlugins = [],
 		shikiConfig,
-		extendMarkdownConfig = false,
+		extendMarkdownConfig,
 		viteExternals = [],
 	} = options;
+
+	const resolvedExtendMarkdownConfig = extendMarkdownConfig ?? false;
 
 	return {
 		name: 'notro',
 		hooks: {
-			'astro:config:setup': async ({ updateConfig }) => {
-				// When shikiConfig is provided, dynamically load @shikijs/rehype
-				// (optional dependency) and inject it as the last rehype plugin so
-				// that diagram/math plugins (rehypeMermaid, rehypeKatex) run first.
-				let allRehypePlugins: PluggableList = rehypePlugins;
-				if (shikiConfig != null) {
-					try {
-						// Use new Function to escape Vite's static import analysis.
-						// A plain `await import('@shikijs/rehype')` inside an Astro hook
-						// is intercepted by Vite's module runner, which may fail to
-						// resolve optional packages. new Function forces Node.js's native
-						// ESM loader to handle the import at runtime.
-						// eslint-disable-next-line @typescript-eslint/no-implied-eval
-						const nativeImport = new Function('s', 'return import(s)') as (s: string) => Promise<{ default: unknown }>;
-						const mod = await nativeImport('@shikijs/rehype');
-						allRehypePlugins = [...rehypePlugins, [mod.default, shikiConfig]];
-					} catch {
-						throw new Error(
-							'[notro] shikiConfig was provided but @shikijs/rehype is not installed.\n' +
-							'Run: npm install @shikijs/rehype',
-						);
-					}
-				}
-
-				// Share user-provided plugins with the runtime compileMdxCached() path
-				// via the module-level config store in notro-config.ts.
-				// Both the static .mdx path (via @astrojs/mdx below) and the runtime
-				// Notion content path (via buildMdxPlugins → getNotroPlugins) will
-				// use the same plugin configuration.
-				setNotroPlugins(remarkPlugins, allRehypePlugins);
+			'astro:config:setup': ({ updateConfig }) => {
+				// Build the Sätteri processor with notro's core MDASTP plugins
+				// (callout directive conversion) and any user-provided plugins.
+				const satteriProcessor = satteri({
+					// Enable :::callout{...} directive parsing
+					features: { directive: true },
+					mdastPlugins: [...buildSatteriMdastPlugins(), ...mdastPlugins],
+					hastPlugins: [...hastPlugins],
+				});
 
 				// Inject @astrojs/mdx by appending to the integrations array via
 				// updateConfig(). Astro's config setup loop re-checks the array length
 				// each iteration, so the injected MDX integration is picked up and its
 				// own astro:config:setup hook runs immediately after notro's hook.
+				//
+				// Pass syntaxHighlight + shikiConfig directly to mdx() so they are
+				// applied as first-class MdxOptions (not inherited from markdown config).
+				// This ensures the Sätteri MDX processor creates a Shiki highlighter
+				// without relying on updateConfig({ markdown: {...} }) propagation.
 				updateConfig({
 					integrations: [mdx({
-						// Combine notro's core Notion remark plugins with user-provided ones.
-						remarkPlugins: [remarkNfm, ...remarkPlugins],
-						// User and built-in rehype plugins (math, diagrams, shiki, etc.).
-						rehypePlugins: allRehypePlugins,
-						extendMarkdownConfig,
+						processor: satteriProcessor,
+						extendMarkdownConfig: resolvedExtendMarkdownConfig,
+						...(shikiConfig != null ? { syntaxHighlight: 'shiki', shikiConfig } : {}),
 					// `as any` is needed because Astro's TypeScript types for updateConfig
 					// only accept AstroIntegration[], but @astrojs/mdx returns its own
 					// subtype that is structurally compatible but not assignable.

@@ -323,38 +323,34 @@ The `notro-loader` package exposes four entry points, each designed for a specif
 
 ### `notro()` Astro Integration
 
-`notro()` is an Astro integration that registers `@astrojs/mdx` with notro's core plugin suite. It is required for two reasons:
+`notro()` is an Astro integration that registers `@astrojs/mdx` with the Sätteri processor. It is required for two reasons:
 
 1. **`astro:jsx` renderer** — `@astrojs/mdx` registers the `astro:jsx` renderer that `@mdx-js/mdx`'s `evaluate()` depends on to produce Astro VNodes. Without it, `NotroContent` fails at runtime.
-2. **Static `.mdx` files** — if the project uses `.mdx` files alongside Notion content, `notro()` ensures they are processed with the same plugin pipeline as dynamically compiled Notion markdown.
+2. **Static `.mdx` files** — if the project uses `.mdx` files alongside Notion content, `notro()` configures `@astrojs/mdx` with Sätteri's Rust-based Markdown pipeline and notro's core MDASTP plugins.
 
-The interface mirrors `@astrojs/mdx`. Available options:
+Available options:
 
 | Option | Type | Purpose |
 |---|---|---|
-| `remarkPlugins` | `PluggableList` | Additional remark plugins (e.g. `[remarkMath]`) |
-| `rehypePlugins` | `PluggableList` | Additional rehype plugins (e.g. `[rehypeKatex, [rehypeMermaid, { theme: 'github-dark' }]]`) |
-| `shikiConfig` | `Record<string, unknown>` | Injects `@shikijs/rehype` as the last plugin (requires `npm i @shikijs/rehype`). Example: `{ theme: 'github-dark' }` |
+| `mdastPlugins` | `MdastPluginDefinition[]` | Sätteri MDASTP plugins for static `.mdx` files |
+| `hastPlugins` | `HastPluginDefinition[]` | Sätteri HAST plugins for static `.mdx` files (e.g. `[satteriMermaidPlugin()]`) |
+| `shikiConfig` | `Record<string, unknown>` | Shiki syntax highlighting config. Routed through Astro's `markdown.shikiConfig` for the Sätteri pipeline. Example: `{ theme: 'github-dark' }` |
 | `viteExternals` | `string[]` | Packages to add to Vite's `ssr.external` (for native binaries or dynamic imports) |
-| `extendMarkdownConfig` | `boolean` | Whether to extend Astro's base markdown config (default: `false`) |
+| `extendMarkdownConfig` | `boolean` | Whether to extend Astro's base markdown config. Defaults to `true` when `shikiConfig` is set. |
 
 Usage in `astro.config.mjs`:
 ```js
 import { notro } from "notro-loader/integration";
 import { notionImageService } from "notro-loader/image-service";
-import { rehypeMermaid } from "rehype-beautiful-mermaid";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import { satteriMermaidPlugin } from "rehype-beautiful-mermaid/satteri";
 
 export default defineConfig({
   image: { service: notionImageService },
   integrations: [
     notro({
       shikiConfig: { theme: "github-dark" },
-      remarkPlugins: [remarkMath],
-      rehypePlugins: [
-        [rehypeMermaid, { theme: "github-dark" }],
-        rehypeKatex,
+      hastPlugins: [
+        satteriMermaidPlugin({ theme: "github-dark" }),
       ],
     }),
     sitemap(),
@@ -371,24 +367,21 @@ export default defineConfig({
 
 ### MDX Compile Pipeline
 
-Defined in `packages/notro-loader/src/utils/mdx-pipeline.ts` via `@mdx-js/mdx`'s `evaluate()` (called from `compile-mdx.ts`). The pipeline is shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration.
+There are two separate pipelines:
 
-**Core remark plugins** (always active):
-- `remarkNfm` (from `remark-nfm`) — bundles pre-parse normalization (`preprocessNotionMarkdown`), directive syntax + GFM strikethrough/task-list support, and callout conversion in one plugin
+**1. Notion content (runtime path)** — `compile-mdx.ts` → `@mdx-js/mdx`'s `evaluate()`
 
-**User-provided remark plugins** (opt-in via `notro({ remarkPlugins })`):
-- e.g. `remark-math` — enables `$...$` inline and `$$...$$` block math syntax
+Notion markdown is preprocessed entirely at string level before `evaluate()` is called. No remark or rehype plugins run. Transforms applied:
+- `preprocessNotionMarkdown()` — 19 fixes for Notion API markdown quirks (callout→JSX, element renaming, color→className, etc.)
+- `applyMdxContext()` — heading IDs, TOC population, page link resolution
 
-**Core rehype plugins** (always active, in order):
-1. `rehypeRaw` — converts raw HTML strings from Notion markdown into hast nodes; passes through Notion custom elements (`callout`, `columns`, `video`, etc.)
-2. `rehypeNotionColorPlugin` — converts `color="gray_bg"` / `underline="true"` attributes on `<p>`, `<h1-h6>`, `<span>` elements to `notro-*` CSS classes
-3. `rehypeBlockElementsPlugin` — renames Notion block elements from lowercase to PascalCase so MDX routes them through the `components` map (e.g. `video` → `Video`, `table_of_contents` → `TableOfContents`)
-4. `rehypeInlineMentionsPlugin` — same rename for inline mention elements (`mention-user` → `MentionUser`, etc.)
-5. _(user-provided rehype plugins run here)_
-6. `rehypeShiki` — injected automatically when `shikiConfig` is set (runs last so other plugins go first)
-7. `rehypeSlug` — adds `id` attributes to h1–h4 headings
-8. `rehypeTocPlugin` — populates `<TableOfContents>` with anchor links to all headings
-9. `resolvePageLinksPlugin` — resolves Notion `notion.so` URLs in `<PageRef>`, `<DatabaseRef>`, mention elements, and `<a href>` using the `linkToPages` map
+**2. Static `.mdx` files** — `@astrojs/mdx` with Sätteri processor
+
+Configured by `notro()` in `astro.config.mjs`. Uses Sätteri's Rust-based Markdown pipeline:
+- `notroCalloutPlugin` (MDASTP, always active) — converts `:::callout{...}` directives to `<callout>` MDX JSX elements
+- User-provided `mdastPlugins` and `hastPlugins` (opt-in via `notro({ mdastPlugins, hastPlugins })`)
+- Shiki syntax highlighting — enabled via `notro({ shikiConfig: { theme: '...' } })`
+- Mermaid diagram rendering — via `satteriMermaidPlugin()` from `rehype-beautiful-mermaid/satteri`
 
 **Component mapping** (HTML elements → Astro components):
 - After `evaluate()`, `<Content components={notionComponents} />` maps every Notion block type (callout, toggle, columns, images, table, TOC, etc.) and standard HTML element to an Astro component
