@@ -337,6 +337,7 @@ The interface mirrors `@astrojs/mdx`. Available options:
 | `shikiConfig` | `Record<string, unknown>` | Injects `@shikijs/rehype` as the last plugin (requires `npm i @shikijs/rehype`). Example: `{ theme: 'github-dark' }` |
 | `viteExternals` | `string[]` | Packages to add to Vite's `ssr.external` (for native binaries or dynamic imports) |
 | `extendMarkdownConfig` | `boolean` | Whether to extend Astro's base markdown config (default: `false`) |
+| `processor` | `'satteri' \| 'unified'` | Which processor compiles Notion content and static `.mdx`. Defaults to `'satteri'` (Astro 7's Rust processor) when no plugin options are set, `'unified'` when `remarkPlugins` / `rehypePlugins` / `shikiConfig` are provided (Satteri cannot run remark/rehype plugins) |
 
 Usage in `astro.config.mjs`:
 ```js
@@ -371,7 +372,12 @@ export default defineConfig({
 
 ### MDX Compile Pipeline
 
-Defined in `packages/notro-loader/src/utils/mdx-pipeline.ts` via `@mdx-js/mdx`'s `evaluate()` (called from `compile-mdx.ts`). The pipeline is shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration.
+Two processor pipelines exist; `compile-mdx.ts` picks one via `getNotroProcessor()`:
+
+- **Sätteri (default)** — `packages/notro-loader/src/utils/satteri-pipeline.ts`, compiled via `satteri`'s `evaluate()`. Astro 7's Rust-based processor; used when the user configures no remark/rehype plugins. notro's core plugins are ported to Sätteri's mdast/hast plugin API (callout conversion, color classes, PascalCase renames, heading slugs, TOC, page link resolution). `preprocessNotionMarkdown()` runs explicitly before `evaluate()`. Note Sätteri's single-pass mutation model: transforms queued on descendants of a replaced node are dropped, so replacing plugins deep-transform the whole cloned subtree at the topmost matching node.
+- **unified (fallback)** — `packages/notro-loader/src/utils/mdx-pipeline.ts` via `@mdx-js/mdx`'s `evaluate()`. Used when `notro({ remarkPlugins / rehypePlugins / shikiConfig })` is configured, since Sätteri cannot run remark/rehype plugins.
+
+Both pipelines are shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration. The unified pipeline is described below.
 
 **Core remark plugins** (always active):
 - `remarkNfm` (from `remark-nfm`) — bundles pre-parse normalization (`preprocessNotionMarkdown`), directive syntax + GFM strikethrough/task-list support, and callout conversion in one plugin
