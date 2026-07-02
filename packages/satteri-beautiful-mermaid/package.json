@@ -1,21 +1,20 @@
 {
-  "name": "remark-notro",
-  "description": "Remark plugin for Notion-flavored Markdown (NFM)",
-  "version": "0.0.11",
+  "name": "satteri-beautiful-mermaid",
+  "description": "Satteri hast plugin that renders Mermaid code blocks to inline SVG at build time",
+  "version": "0.0.0",
   "type": "module",
   "author": "mosugi <mosugeek@gmail.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mosugi/notro.git",
-    "directory": "packages/remark-nfm"
+    "directory": "packages/satteri-beautiful-mermaid"
   },
   "keywords": [
-    "remark",
-    "remark-plugin",
-    "notion",
-    "markdown",
-    "unified"
+    "satteri",
+    "satteri-plugin",
+    "mermaid",
+    "astro"
   ],
   "bugs": {
     "url": "https://github.com/mosugi/notro/issues"
@@ -30,8 +29,7 @@
   "scripts": {
     "prepack": "tsdown",
     "build": "tsdown",
-    "format": "prettier --write 'src/**/*.ts'",
-    "test": "vitest run"
+    "format": "prettier --write 'src/**/*.ts'"
   },
   "publishConfig": {
     "access": "public",
@@ -44,23 +42,20 @@
     }
   },
   "dependencies": {
-    "mdast-util-directive": "^3.0.0",
-    "mdast-util-gfm-strikethrough": "^2.0.0",
-    "mdast-util-gfm-task-list-item": "^2.0.0",
-    "micromark-extension-directive": "^4.0.0",
-    "micromark-extension-gfm-strikethrough": "^2.0.0",
-    "micromark-extension-gfm-task-list-item": "^2.0.0",
-    "unist-util-visit": "^5.0.0"
+    "hast-util-from-html-isomorphic": "^2.0.0"
+  },
+  "optionalDependencies": {
+    "beautiful-mermaid": ">=1.0.0"
+  },
+  "peerDependencies": {
+    "satteri": ">=0.9.0"
   },
   "engines": {
     "node": ">=24.0.0"
   },
-  "peerDependencies": {
-    "unified": ">=11.0.0"
-  },
   "devDependencies": {
     "tsdown": "^0.12.9",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "satteri": "^0.9.4"
   }
 }

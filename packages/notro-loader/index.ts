@@ -2,10 +2,14 @@ export { default as NotroContent } from "./src/components/NotroContent.astro";
 export type { LinkToPages } from "./src/types.ts";
 
 export * from "./src/utils/notion";
-export { normalizeNotionPresignedUrl, markdownHasPresignedUrls } from "./src/utils/notion-url.ts";
+export {
+  normalizeNotionPresignedUrl,
+  markdownHasPresignedUrls,
+} from "./src/utils/notion-url.ts";
 
 // Low-level MDX compile API — for use in custom .astro renderers (e.g. notro-ui).
 export { compileMdxCached } from "./src/utils/compile-mdx.ts";
+export { preprocessNotionMarkdown } from "./src/utils/notion-preprocess.ts";
 
 // Astro JSX component factory — wrap any HTML tag with optional default classes.
 export { makeHtmlElement } from "./src/utils/HtmlElements.ts";

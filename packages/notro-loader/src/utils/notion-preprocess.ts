@@ -6,7 +6,7 @@
  *
  * 0. (Migration) Escaped inline math:
  *    Old versions of this function incorrectly escaped inline math as \$...\$.
- *    This fix converts \$...\$ back to $...$ so remark-math can parse it.
+ *    This fix converts \$...\$ back to $...$ so math parsers can parse it.
  *
  * 1. Setext heading prevention:
  *    A "---" line immediately after non-blank text is interpreted as a setext
@@ -32,7 +32,7 @@
  *
  * 5. Inline equation format:
  *    Notion outputs inline math as $`E = mc^2`$ (backtick-delimited inside $...$).
- *    remark-math expects standard $E = mc^2$ (no backticks). We strip the backticks.
+ *    math parsers expect standard $E = mc^2$ (no backticks). We strip the backticks.
  *
  * 6. Underscore tags (synced_block):
  *    Same underscore issue as table_of_contents — <synced_block> wraps content
@@ -99,19 +99,73 @@ const LEADING_EMOJI_RE =
 // Block-level HTML closing tags that require a trailing blank line so that
 // CommonMark HTML blocks (type 6) end correctly and following markdown is not
 // consumed as raw HTML text.
-const BLOCK_CLOSING_TAGS = ["table", "details", "columns", "column", "summary"] as const;
+const BLOCK_CLOSING_TAGS = [
+  "table",
+  "details",
+  "columns",
+  "column",
+  "summary",
+] as const;
 
 // LaTeX command names that may appear without a leading backslash in Notion's
 // math output. Sorted longest-first to prefer longer matches (e.g. "pmatrix"
 // before "matrix") when building the alternation.
 const LATEX_COMMANDS = [
-  "underbrace", "overline", "pmatrix", "bmatrix", "mathbb", "mathbf", "mathrm",
-  "epsilon", "partial", "approx", "matrix", "forall", "exists", "lambda",
-  "nabla", "cases", "infty", "sigma", "theta", "equiv", "alpha", "delta",
-  "right", "tilde", "begin", "gamma", "times", "cdot",
-  "frac", "sqrt", "prod", "left", "beta", "text", "ddot", "leq", "geq",
-  "neq", "hat", "bar", "vec", "dot", "end", "sum", "int", "lim", "sin",
-  "cos", "tan", "log", "ln", "mu", "pi", "pm", "div",
+  "underbrace",
+  "overline",
+  "pmatrix",
+  "bmatrix",
+  "mathbb",
+  "mathbf",
+  "mathrm",
+  "epsilon",
+  "partial",
+  "approx",
+  "matrix",
+  "forall",
+  "exists",
+  "lambda",
+  "nabla",
+  "cases",
+  "infty",
+  "sigma",
+  "theta",
+  "equiv",
+  "alpha",
+  "delta",
+  "right",
+  "tilde",
+  "begin",
+  "gamma",
+  "times",
+  "cdot",
+  "frac",
+  "sqrt",
+  "prod",
+  "left",
+  "beta",
+  "text",
+  "ddot",
+  "leq",
+  "geq",
+  "neq",
+  "hat",
+  "bar",
+  "vec",
+  "dot",
+  "end",
+  "sum",
+  "int",
+  "lim",
+  "sin",
+  "cos",
+  "tan",
+  "log",
+  "ln",
+  "mu",
+  "pi",
+  "pm",
+  "div",
 ];
 
 // Build regex: not preceded by backslash or opening brace, the command as a word.
@@ -204,10 +258,13 @@ function convertRawCallouts(input: string): string {
 
 export function preprocessNotionMarkdown(markdown: string): string {
   // Fix 0: Migration — convert \$...\$ (escaped dollars from old preprocessing bug)
-  // back to $...$ so remark-math can parse inline math correctly.
+  // back to $...$ so math parsers handle inline math correctly.
   // Pattern: backslash-dollar, non-newline/non-dollar content, backslash-dollar.
   // This is idempotent: $...$ (already correct) won't match since it has no backslash.
-  let result = markdown.replace(/\\\$([^$\n]+)\\\$/g, (_, content: string) => `$${content}$`);
+  let result = markdown.replace(
+    /\\\$([^$\n]+)\\\$/g,
+    (_, content: string) => `$${content}$`,
+  );
 
   // Fix 1: Ensure --- dividers have a blank line before them.
   // A "---" line immediately after any non-blank content (including after a
@@ -274,7 +331,9 @@ export function preprocessNotionMarkdown(markdown: string): string {
           // then recursively process the dedented content so that nested callout
           // blocks inside are also normalized and dedented.
           const contentLines = lines.slice(i + 1, j);
-          const dedented = contentLines.map((cl) => cl.replace(/^\t/, "")).join("\n");
+          const dedented = contentLines
+            .map((cl) => cl.replace(/^\t/, ""))
+            .join("\n");
           const processedContent = processCalloutsDedent(dedented);
           out.push(line);
           if (processedContent) out.push(...processedContent.split("\n"));
@@ -297,11 +356,11 @@ export function preprocessNotionMarkdown(markdown: string): string {
   result = result.replace(
     /^(#{1,6}) (.+?) \{color="([^"]+)"\}$/gm,
     (_, hashes: string, text: string, color: string) =>
-      `<h${hashes.length} color="${color}">${text}</h${hashes.length}>`
+      `<h${hashes.length} color="${color}">${text}</h${hashes.length}>`,
   );
   result = result.replace(
     /^([^<#\n][^\n]*?) \{color="([^"]+)"\}$/gm,
-    '<p color="$2">$1</p>'
+    '<p color="$2">$1</p>',
   );
   // Ensure color-annotated <p> blocks are surrounded by blank lines so remark
   // treats them as standalone HTML blocks (CommonMark type 6) rather than
@@ -320,13 +379,16 @@ export function preprocessNotionMarkdown(markdown: string): string {
     (_, attrs: string | undefined) => {
       const innerAttrs = attrs ? attrs.trim() : "";
       return `<div><table_of_contents${innerAttrs ? ` ${innerAttrs}` : ""}/></div>\n`;
-    }
+    },
   );
 
-  // Fix 5: Convert Notion inline equation format $`...`$ → $...$ for remark-math.
+  // Fix 5: Convert Notion inline equation format $`...`$ → $...$ for math parsing.
   // Uses function-form replacement to avoid $ metacharacter confusion in the
   // replacement string.
-  result = result.replace(/\$`([^`]+)`\$/g, (_, content: string) => `$${content}$`);
+  result = result.replace(
+    /\$`([^`]+)`\$/g,
+    (_, content: string) => `$${content}$`,
+  );
 
   // Fix 6: Strip <synced_block> and <synced_block_reference> wrapper tags and dedent content.
   // These tags contain underscores, preventing CommonMark HTML block detection.
@@ -366,7 +428,7 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // literal string instead of proper HTML elements.
   const blockClosingPattern = new RegExp(
     `(<\\/(${BLOCK_CLOSING_TAGS.join("|")})>)\\n([^\\n])`,
-    "g"
+    "g",
   );
   result = result.replace(blockClosingPattern, "$1\n\n$3");
 
@@ -377,10 +439,14 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // The URL pattern handles one level of nested parentheses, e.g.:
   //   https://en.wikipedia.org/wiki/Rust_(programming_language)
   //   https://developer.mozilla.org/docs/Array/find()
-  const convertLinksInCell = (_: string, tag: string, content: string): string => {
+  const convertLinksInCell = (
+    _: string,
+    tag: string,
+    content: string,
+  ): string => {
     const linked = content.replace(
       /\[([^\]\n]+)\]\(([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)\)/g,
-      '<a href="$2">$1</a>'
+      '<a href="$2">$1</a>',
     );
     return `<${tag}>${linked}</${tag}>`;
   };
@@ -405,10 +471,14 @@ export function preprocessNotionMarkdown(markdown: string): string {
       if (/^<\/(details|columns|column)>/.test(stripped)) {
         // Closing tag: pop depth, then remove 'depth' tabs (after pop).
         if (depth > 0) depth--;
-        out.push(depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line);
+        out.push(
+          depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line,
+        );
       } else if (/^<(details|columns|column)(?:\s[^>]*)?>$/.test(stripped)) {
         // Opening tag: remove 'depth' tabs before the tag, then push depth.
-        out.push(depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line);
+        out.push(
+          depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line,
+        );
         depth++;
       } else if (depth > 0) {
         // Content line inside a container: remove up to 'depth' leading tabs.
@@ -430,12 +500,12 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // Inline math $...$ (single line): replace via simple regex.
   result = result.replace(
     /\$([^$\n]+)\$/g,
-    (_, content: string) => `$${content.replace(LATEX_CMD_RE, "\\$1")}$`
+    (_, content: string) => `$${content.replace(LATEX_CMD_RE, "\\$1")}$`,
   );
   // Block math $$...$$ (potentially multi-line): replace via multiline regex.
   result = result.replace(
     /\$\$([\s\S]+?)\$\$/g,
-    (_, content: string) => `$$${content.replace(LATEX_CMD_RE, "\\$1")}$$`
+    (_, content: string) => `$$${content.replace(LATEX_CMD_RE, "\\$1")}$$`,
   );
 
   // Fix 12: Prevent blockquote lazy continuation.
@@ -457,7 +527,9 @@ export function preprocessNotionMarkdown(markdown: string): string {
   //
   // Note: <br> tags are left as-is; rehype-raw handles them downstream.
   result = result
-    .split(/((?:^|\n)```[\s\S]*?(?:```\s*(?:\n|$)|$)|(?:^|\n):::[\s\S]*?(?:\n:::[ \t]*(?:\n|$)|$))/g)
+    .split(
+      /((?:^|\n)```[\s\S]*?(?:```\s*(?:\n|$)|$)|(?:^|\n):::[\s\S]*?(?:\n:::[ \t]*(?:\n|$)|$))/g,
+    )
     .map((segment, i) => {
       if (i % 2 === 1) return segment; // protected block (fenced code / directive) — pass through
       // Expand single \n between non-blank lines to \n\n.
@@ -488,7 +560,10 @@ export function preprocessNotionMarkdown(markdown: string): string {
     .map((segment, i) => {
       // Odd-indexed segments are code spans / fenced blocks — pass through unchanged.
       if (i % 2 === 1) return segment;
-      return segment.replace(/\*\*([^\n*]+?)\*\*/g, (_, content) => `<strong>${content.trimEnd()}</strong>`);
+      return segment.replace(
+        /\*\*([^\n*]+?)\*\*/g,
+        (_, content) => `<strong>${content.trimEnd()}</strong>`,
+      );
     })
     .join("");
 

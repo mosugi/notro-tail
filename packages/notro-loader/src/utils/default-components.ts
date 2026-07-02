@@ -34,7 +34,7 @@ export const defaultComponents = {
   Details:                makeHtmlElement("details"),
   Summary:                makeHtmlElement("summary"),
   EmptyBlock:             makeHtmlElement("div"),
-  // callout is created by remarkNfm (a remark-level plugin via data.hName),
+  // callout is created by notro's Sätteri callout plugin (mdast level),
   // not from raw HTML, so MDX tracks it in _components and lowercase works.
   callout:                makeHtmlElement("aside"),
   // ── Inline mention components (PascalCase) ────────────────────────────────

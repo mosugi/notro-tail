@@ -6,6 +6,15 @@
  *
  * For Astro components and the Content Loader, use the main `notro` entry instead.
  */
-export { normalizeNotionPresignedUrl, markdownHasPresignedUrls } from './src/utils/notion-url.ts';
-export { getPlainText, getMultiSelect, hasTag, buildLinkToPages } from './src/utils/notion.ts';
-export type { LinkToPages } from './src/types.ts';
+export {
+  normalizeNotionPresignedUrl,
+  markdownHasPresignedUrls,
+} from "./src/utils/notion-url.ts";
+export {
+  getPlainText,
+  getMultiSelect,
+  hasTag,
+  buildLinkToPages,
+} from "./src/utils/notion.ts";
+export { preprocessNotionMarkdown } from "./src/utils/notion-preprocess.ts";
+export type { LinkToPages } from "./src/types.ts";

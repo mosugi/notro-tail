@@ -195,10 +195,9 @@ When making changes to published packages (those without `private: true`) under 
 
 | Package | Path |
 |---|---|
-| `remark-notro` | `packages/remark-nfm/` |
 | `notro-loader` | `packages/notro-loader/` |
 | `notro-ui` | `packages/notro-ui/` |
-| `rehype-beautiful-mermaid` | `packages/rehype-beautiful-mermaid/` |
+| `satteri-beautiful-mermaid` | `packages/satteri-beautiful-mermaid/` |
 | `create-notro` | `packages/create-notro/` |
 | `notro-md-sync` | `packages/notro-md-sync/` |
 
@@ -217,16 +216,15 @@ Run `pnpm changeset` to create a changeset (see "Package Publishing" section for
 
 ## Project Overview
 
-**NotroTail** is a Notion-to-Astro static site generator. It fetches content from Notion via the Notion Public API (Markdown Content API), compiles it as MDX using `@mdx-js/mdx`'s `evaluate()`, and maps Notion block types to Astro components. Outputs a fast, SEO-optimized static site styled with TailwindCSS 4.
+**NotroTail** is a Notion-to-Astro static site generator. It fetches content from Notion via the Notion Public API (Markdown Content API), compiles it as MDX using Sätteri (Astro 7's Rust-based Markdown/MDX processor) via its `evaluate()`, and maps Notion block types to Astro components. Outputs a fast, SEO-optimized static site styled with TailwindCSS 4.
 
 The repo is a **pnpm workspace monorepo** with the following packages:
 
 | Package | Path | Purpose |
 |---|---|---|
-| `remark-nfm` | `packages/remark-nfm/` | Pure remark plugin for Notion-flavored Markdown — pre-parse normalization, `:::callout` directive syntax, and callout conversion. No Astro or Notion API dependencies; independently publishable to npm. |
-| `notro-loader` | `packages/notro-loader/` | The publishable npm library (Astro Content Loader + MDX compile pipeline + Notion block components). Uses `remark-nfm` internally. |
+| `notro-loader` | `packages/notro-loader/` | The publishable npm library (Astro Content Loader + Sätteri MDX compile pipeline + Notion block components). Includes `preprocessNotionMarkdown()` for Notion markdown normalization. |
 | `notro-ui` | `packages/notro-ui/` | Copy-and-own styled Notion block components (shadcn-style). Run `notro-ui add --all` to install components into a template — they become your code, editable directly. |
-| `rehype-beautiful-mermaid` | `packages/rehype-beautiful-mermaid/` | Rehype plugin that renders Mermaid code blocks to inline SVG at build time. Optional; included in the blog template. |
+| `satteri-beautiful-mermaid` | `packages/satteri-beautiful-mermaid/` | Rehype plugin that renders Mermaid code blocks to inline SVG at build time. Optional; included in the blog template. |
 | `create-notro` | `packages/create-notro/` | CLI scaffolding tool (`npm create notro@latest`). Downloads a starter template and sets up the project. |
 | `notro-md-sync` | `packages/notro-md-sync/` | CLI tool for bidirectional sync between local markdown files and a Notion data source (`notro-md-sync publish / get`). |
 | `notro-blog` (blog) | `templates/blog/` | Full-featured blog template (reference app, fetched by `create-notro`) |
@@ -268,11 +266,6 @@ notro/
 │       ├── package.json
 │       └── tsconfig.json
 ├── packages/
-│   ├── remark-nfm/          # npm library ("remark-nfm" package)
-│   │   ├── index.ts         # Public API exports
-│   │   └── src/
-│   │       ├── nfm.ts           # remarkNfm plugin (pre-parse + directive + callout conversion)
-│   │       └── transformer.ts   # preprocessNotionMarkdown() — 10 fixes for Notion markdown quirks
 │   ├── notro-loader/        # npm library ("notro-loader" package)
 │   │   ├── index.ts         # Main entry point (components + loader)
 │   │   ├── integration.ts   # notro() Astro integration entry point
@@ -285,14 +278,16 @@ notro/
 │   │   │   │   ├── live-loader.ts # Live-reload loader variant
 │   │   │   │   └── schema.ts      # Zod schemas for Notion API response types
 │   │   │   └── utils/
-│   │   │       ├── compile-mdx.ts    # compileMdxForAstro() — MDX evaluate + Astro component wiring
-│   │   │       ├── mdx-pipeline.ts   # buildMdxPlugins() — remark/rehype plugin configuration
-│   │   │       └── notion.ts         # getPlainText(), buildLinkToPages() helpers
+│   │   │       ├── compile-mdx.ts        # compileMdxForAstro() — Sätteri evaluate + Astro component wiring
+│   │   │       ├── satteri-pipeline.ts   # buildSatteriPlugins() — Sätteri mdast/hast plugin configuration
+│   │   │       ├── satteri-shiki.ts      # Shiki syntax-highlighting hast plugin (shikiConfig option)
+│   │   │       ├── notion-preprocess.ts  # preprocessNotionMarkdown() — fixes for Notion markdown quirks
+│   │   │       └── notion.ts             # getPlainText(), buildLinkToPages() helpers
 │   │   └── package.json
 │   ├── notro-ui/            # CLI tool + copy-and-own styled components
 │   │   ├── bin/notro-ui.js  # CLI entry point
 │   │   └── src/templates/   # Source-of-truth component templates (.astro files)
-│   ├── rehype-beautiful-mermaid/  # npm library — renders Mermaid blocks to inline SVG
+│   ├── satteri-beautiful-mermaid/  # npm library — Sätteri plugin, renders Mermaid blocks to inline SVG
 │   │   ├── index.ts         # Public API exports
 │   │   └── src/
 │   ├── create-notro/        # npm library ("create-notro") — CLI scaffolding tool
@@ -325,38 +320,37 @@ The `notro-loader` package exposes four entry points, each designed for a specif
 
 `notro()` is an Astro integration that registers `@astrojs/mdx` with notro's core plugin suite. It is required for two reasons:
 
-1. **`astro:jsx` renderer** — `@astrojs/mdx` registers the `astro:jsx` renderer that `@mdx-js/mdx`'s `evaluate()` depends on to produce Astro VNodes. Without it, `NotroContent` fails at runtime.
+1. **`astro:jsx` renderer** — `@astrojs/mdx` registers the `astro:jsx` renderer that Sätteri's `evaluate()` depends on to produce Astro VNodes. Without it, `NotroContent` fails at runtime.
 2. **Static `.mdx` files** — if the project uses `.mdx` files alongside Notion content, `notro()` ensures they are processed with the same plugin pipeline as dynamically compiled Notion markdown.
 
 The interface mirrors `@astrojs/mdx`. Available options:
 
 | Option | Type | Purpose |
 |---|---|---|
-| `remarkPlugins` | `PluggableList` | Additional remark plugins (e.g. `[remarkMath]`) |
-| `rehypePlugins` | `PluggableList` | Additional rehype plugins (e.g. `[rehypeKatex, [rehypeMermaid, { theme: 'github-dark' }]]`) |
-| `shikiConfig` | `Record<string, unknown>` | Injects `@shikijs/rehype` as the last plugin (requires `npm i @shikijs/rehype`). Example: `{ theme: 'github-dark' }` |
+| `mdastPlugins` | `MdastPluginInput[]` | Sätteri mdast plugins run after notro's core plugins (e.g. `[satteriKatex()]`) |
+| `hastPlugins` | `HastPluginInput[]` | Sätteri hast plugins run after renames, before slugs/TOC (e.g. `[satteriMermaid({ theme: 'github-dark' })]`) |
+| `features` | `Features` | Extra Sätteri parser features merged over notro's defaults (e.g. `{ math: true }`) |
+| `shikiConfig` | `Record<string, unknown>` | Injects a Shiki hast plugin as the last user plugin (requires `npm i shiki`). Example: `{ theme: 'github-dark' }` |
 | `viteExternals` | `string[]` | Packages to add to Vite's `ssr.external` (for native binaries or dynamic imports) |
 | `extendMarkdownConfig` | `boolean` | Whether to extend Astro's base markdown config (default: `false`) |
-| `processor` | `'satteri' \| 'unified'` | Which processor compiles Notion content and static `.mdx`. Defaults to `'satteri'` (Astro 7's Rust processor) when no plugin options are set, `'unified'` when `remarkPlugins` / `rehypePlugins` / `shikiConfig` are provided (Satteri cannot run remark/rehype plugins) |
+
+remark/rehype plugins are NOT supported — Astro 7 deprecated `markdown.remarkPlugins` / `rehypePlugins` and Sätteri cannot run them. Use Sätteri's mdast/hast plugin API (https://satteri.bruits.org/docs/plugins/) instead.
 
 Usage in `astro.config.mjs`:
 ```js
 import { notro } from "notro-loader/integration";
 import { notionImageService } from "notro-loader/image-service";
-import { rehypeMermaid } from "rehype-beautiful-mermaid";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import { satteriMermaid } from "satteri-beautiful-mermaid";
+import { satteriKatex } from "./src/lib/satteri-katex.ts";
 
 export default defineConfig({
   image: { service: notionImageService },
   integrations: [
     notro({
       shikiConfig: { theme: "github-dark" },
-      remarkPlugins: [remarkMath],
-      rehypePlugins: [
-        [rehypeMermaid, { theme: "github-dark" }],
-        rehypeKatex,
-      ],
+      features: { math: true },
+      mdastPlugins: [satteriKatex()],
+      hastPlugins: [satteriMermaid({ theme: "github-dark" })],
     }),
     sitemap(),
   ],
@@ -368,33 +362,28 @@ export default defineConfig({
 1. **Astro Content Collections** (`content.config.ts`) defines the `posts` collection (the template app; extend as needed for additional collections).
 2. Each collection uses the `loader()` from `notro-loader`, which calls the Notion Public API (`dataSources.query` + `pages.retrieveMarkdown`).
 3. The loader caches pages by `last_edited_time` digest, and invalidates cache entries that are deleted, edited, or contain expired Notion pre-signed S3 URLs.
-4. Each page's preprocessed Markdown is stored in the Content Collection store. Pages render it via `NotroContent`, which calls `compileMdxCached()` to compile the markdown into an Astro component via `@mdx-js/mdx`'s `evaluate()`, then renders it with `<Content components={notionComponents} />`.
+4. Each page's preprocessed Markdown is stored in the Content Collection store. Pages render it via `NotroContent`, which calls `compileMdxCached()` to compile the markdown into an Astro component via Sätteri's `evaluate()`, then renders it with `<Content components={notionComponents} />`.
 
-### MDX Compile Pipeline
+### MDX Compile Pipeline (Sätteri)
 
-Two processor pipelines exist; `compile-mdx.ts` picks one via `getNotroProcessor()`:
+Defined in `packages/notro-loader/src/utils/satteri-pipeline.ts`, compiled via Sätteri's `evaluate()` (called from `compile-mdx.ts`). The pipeline is shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration.
 
-- **Sätteri (default)** — `packages/notro-loader/src/utils/satteri-pipeline.ts`, compiled via `satteri`'s `evaluate()`. Astro 7's Rust-based processor; used when the user configures no remark/rehype plugins. notro's core plugins are ported to Sätteri's mdast/hast plugin API (callout conversion, color classes, PascalCase renames, heading slugs, TOC, page link resolution). `preprocessNotionMarkdown()` runs explicitly before `evaluate()`. Note Sätteri's single-pass mutation model: transforms queued on descendants of a replaced node are dropped, so replacing plugins deep-transform the whole cloned subtree at the topmost matching node.
-- **unified (fallback)** — `packages/notro-loader/src/utils/mdx-pipeline.ts` via `@mdx-js/mdx`'s `evaluate()`. Used when `notro({ remarkPlugins / rehypePlugins / shikiConfig })` is configured, since Sätteri cannot run remark/rehype plugins.
+`preprocessNotionMarkdown()` (notion-preprocess.ts) runs explicitly before `evaluate()` — Sätteri has no parser hook. Parser features: `directive: true` (`:::callout` blocks) and `gfm: { footnotes: false }` (strikethrough, task lists, tables). Raw HTML from Notion markdown needs no rehype-raw equivalent — Sätteri's MDX parser emits it as MDX JSX nodes.
 
-Both pipelines are shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration. The unified pipeline is described below.
+**mdast plugins** (in order):
+1. `calloutPlugin` — converts `:::callout{icon color}` container directives to `<callout>` MDX JSX elements; restores stray inline text directives (e.g. `:4321` in URLs) as literal text using UTF-8 byte-offset source slices
+2. _(user-provided `mdastPlugins` run here — e.g. `satteriKatex()` renders math nodes enabled by `features: { math: true }`)_
 
-**Core remark plugins** (always active):
-- `remarkNfm` (from `remark-nfm`) — bundles pre-parse normalization (`preprocessNotionMarkdown`), directive syntax + GFM strikethrough/task-list support, and callout conversion in one plugin
+**hast plugins** (in order):
+1. `colorPlugin` — converts `color="gray_bg"` / `underline="true"` attributes on `<p>`, `<h1-h6>`, `<span>` elements to `notro-*` CSS classes
+2. `renamePlugin` — renames Notion block and mention elements from lowercase to PascalCase so MDX routes them through the `components` map (e.g. `video` → `Video`, `mention-user` → `MentionUser`)
+3. _(user-provided `hastPlugins` run here — e.g. `satteriMermaid()`)_
+4. Shiki plugin — injected automatically when `shikiConfig` is set (runs last of the user plugins)
+5. `slugPlugin` — adds `id` attributes to h1–h4 headings (github-slugger) and collects headings into `ctx.data`
+6. `tocInjectPlugin` — populates `<TableOfContents>` with anchor links from the collected headings
+7. `pageLinksPlugin` — resolves Notion `notion.so` URLs in `<PageRef>`, `<DatabaseRef>`, mention elements, and `<a href>` using the `linkToPages` map
 
-**User-provided remark plugins** (opt-in via `notro({ remarkPlugins })`):
-- e.g. `remark-math` — enables `$...$` inline and `$$...$$` block math syntax
-
-**Core rehype plugins** (always active, in order):
-1. `rehypeRaw` — converts raw HTML strings from Notion markdown into hast nodes; passes through Notion custom elements (`callout`, `columns`, `video`, etc.)
-2. `rehypeNotionColorPlugin` — converts `color="gray_bg"` / `underline="true"` attributes on `<p>`, `<h1-h6>`, `<span>` elements to `notro-*` CSS classes
-3. `rehypeBlockElementsPlugin` — renames Notion block elements from lowercase to PascalCase so MDX routes them through the `components` map (e.g. `video` → `Video`, `table_of_contents` → `TableOfContents`)
-4. `rehypeInlineMentionsPlugin` — same rename for inline mention elements (`mention-user` → `MentionUser`, etc.)
-5. _(user-provided rehype plugins run here)_
-6. `rehypeShiki` — injected automatically when `shikiConfig` is set (runs last so other plugins go first)
-7. `rehypeSlug` — adds `id` attributes to h1–h4 headings
-8. `rehypeTocPlugin` — populates `<TableOfContents>` with anchor links to all headings
-9. `resolvePageLinksPlugin` — resolves Notion `notion.so` URLs in `<PageRef>`, `<DatabaseRef>`, mention elements, and `<a href>` using the `linkToPages` map
+**Sätteri's single-pass mutation model**: each plugin walks the tree once, and transforms queued on descendants of a replaced node are dropped. Plugins that replace nodes (callout, colors, renames) therefore deep-transform the whole cloned subtree at the topmost matching node and skip nodes whose ancestors already match. Two-pass patterns (slug collection → TOC injection) become two sequential plugins sharing `ctx.data`.
 
 **Component mapping** (HTML elements → Astro components):
 - After `evaluate()`, `<Content components={notionComponents} />` maps every Notion block type (callout, toggle, columns, images, table, TOC, etc.) and standard HTML element to an Astro component
@@ -427,7 +416,7 @@ Optional props:
 
 ### Markdown Preprocessing (`preprocessNotionMarkdown`)
 
-`packages/remark-nfm/src/transformer.ts` exports `preprocessNotionMarkdown()`, which is called automatically by `remarkNfm` before each parse. It fixes structural issues in Notion's markdown output. The fixes are numbered and documented in the source:
+`packages/notro-loader/src/utils/notion-preprocess.ts` exports `preprocessNotionMarkdown()` (also re-exported from `notro-loader` and `notro-loader/utils`), which `compileMdxForAstro()` calls before each Sätteri `evaluate()`. It fixes structural issues in Notion's markdown output. The fixes are numbered and documented in the source:
 
 | Fix | Problem fixed |
 |-----|---------------|
@@ -590,10 +579,9 @@ The following packages under `packages/` are published to npm (no `private: true
 
 | Package | Path |
 |---|---|
-| `remark-notro` | `packages/remark-nfm/` |
 | `notro-loader` | `packages/notro-loader/` |
 | `notro-ui` | `packages/notro-ui/` |
-| `rehype-beautiful-mermaid` | `packages/rehype-beautiful-mermaid/` |
+| `satteri-beautiful-mermaid` | `packages/satteri-beautiful-mermaid/` |
 | `create-notro` | `packages/create-notro/` |
 | `notro-md-sync` | `packages/notro-md-sync/` |
 

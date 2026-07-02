@@ -1,31 +1,27 @@
 /**
  * Sätteri plugin pipeline for Notion Enhanced Markdown.
  *
- * Astro 7 ships Sätteri, a Rust-based Markdown/MDX processor, as the default.
- * This module ports notro's unified (remark/rehype) pipeline from
- * mdx-pipeline.ts to Sätteri's mdast/hast plugin API so Notion content can be
- * compiled through Sätteri's faster native parser.
+ * notro is built on Sätteri, Astro 7's Rust-based Markdown/MDX processor.
+ * This module defines notro's core plugins on Sätteri's mdast/hast plugin
+ * API and combines them with the user plugins configured via the notro()
+ * integration:
  *
- * The port mirrors mdx-pipeline.ts plugin-for-plugin:
- *
- *   unified pipeline                     → Sätteri pipeline
+ *   concern                → implementation
  *   ─────────────────────────────────────────────────────────────────────
- *   remarkNfm (preprocess)               → preprocessNotionMarkdown() call
- *                                          before evaluate (compile-mdx.ts)
- *   remarkNfm (directive syntax)         → features.directive
- *   remarkNfm (strikethrough/task list)  → features.gfm
- *   remarkNfm (callout conversion)       → calloutPlugin (mdast)
- *   rehypeRaw                            → not needed: Sätteri's MDX parser
- *                                          emits raw HTML as MDX JSX nodes
- *   rehypeNotionColorPlugin              → colorPlugin (hast)
- *   rehypeBlockElementsPlugin            → renamePlugin (hast)
- *   rehypeInlineMentionsPlugin           → renamePlugin (hast)
- *   rehypeSlug                           → slugPlugin (hast, github-slugger)
- *   rehypeTocPlugin                      → slugPlugin + tocInjectPlugin
- *                                          (Sätteri walks once per plugin, so
- *                                          the two-pass TOC becomes two
- *                                          plugins sharing ctx.data)
- *   resolvePageLinksPlugin               → pageLinksPlugin (hast)
+ *   Notion markdown quirks → preprocessNotionMarkdown() call before
+ *                            evaluate (compile-mdx.ts / notion-preprocess.ts)
+ *   :::callout directives  → features.directive + calloutPlugin (mdast)
+ *   strikethrough/tasks    → features.gfm
+ *   color attributes       → colorPlugin (hast)
+ *   component renames      → renamePlugin (hast)
+ *   heading ids            → slugPlugin (hast, github-slugger)
+ *   table of contents      → slugPlugin + tocInjectPlugin (Sätteri walks
+ *                            once per plugin, so the two-pass TOC becomes
+ *                            two plugins sharing ctx.data)
+ *   notion.so page links   → pageLinksPlugin (hast)
+ *
+ * Raw HTML from Notion markdown needs no special handling: Sätteri's MDX
+ * parser emits it as MDX JSX nodes.
  *
  * Replacement semantics: Sätteri applies queued mutations at the end of each
  * plugin's walk, and transforms queued on descendants of a replaced node are
@@ -33,10 +29,6 @@
  * transform the entire cloned subtree at the topmost matching node and skip
  * nodes whose ancestors already match, instead of relying on per-descendant
  * visits.
- *
- * User-provided remark/rehype plugins are NOT supported here — when the user
- * configures notro({ remarkPlugins / rehypePlugins / shikiConfig }), the
- * runtime falls back to the unified pipeline (see compile-mdx.ts).
  */
 
 import GithubSlugger from "github-slugger";
@@ -53,6 +45,7 @@ import {
   type MdxJsxTextElementHast,
 } from "satteri";
 import type { LinkToPages } from "../types.ts";
+import { getNotroSatteriConfig } from "./notro-config.ts";
 
 // Loosely-typed tree node for deep subtree transforms. Sätteri's HastNode /
 // MdastNode unions don't allow uniform child traversal, so the deep helpers
@@ -81,7 +74,7 @@ export const NOTRO_SATTERI_FEATURES: Features = {
   gfm: { footnotes: false },
 };
 
-// ── Shared color tables (mirror of mdx-pipeline.ts) ───────────────────────
+// ── Notion color attribute → Tailwind class conversion ────────────────────
 
 const NOTION_TEXT_CLASSES: Record<string, string> = {
   gray: "text-[var(--notro-gray)]",
@@ -117,7 +110,7 @@ function notionColorToClass(color: string): string {
   return NOTION_TEXT_CLASSES[color] ?? "";
 }
 
-// ── Rename maps (mirror of mdx-pipeline.ts) ────────────────────────────────
+// ── Notion element name → PascalCase component name mapping ───────────────
 
 const NOTION_BLOCK_RENAMES = new Map<string, string>([
   ["table_of_contents", "TableOfContents"],
@@ -557,7 +550,7 @@ function resolveNotionUrl(
 ): { href: string; isExternal: boolean } {
   // Notion URLs end with the page ID (32-char hex, with or without dashes).
   // endsWith() prevents a shorter ID from matching a longer ID that happens
-  // to contain it as a substring. (Mirror of mdx-pipeline.ts.)
+  // to contain it as a substring.
   const urlNoDash = url.replace(/-/g, "");
   for (const [pageId, info] of Object.entries(linkToPages)) {
     const idNoDash = pageId.replace(/-/g, "");
@@ -629,18 +622,25 @@ export type SatteriPlugins = {
 };
 
 /**
- * Returns the Sätteri plugin configuration for Notion MDX. Counterpart of
- * buildMdxPlugins() in mdx-pipeline.ts for the Sätteri processor.
+ * Returns the Sätteri plugin configuration for Notion MDX: notro's core
+ * plugins combined with the user plugins stored by the notro() integration
+ * (see notro-config.ts).
  */
 export function buildSatteriPlugins(linkToPages: LinkToPages): SatteriPlugins {
+  const user = getNotroSatteriConfig();
   return {
-    mdastPlugins: [calloutPlugin],
+    // notro's callout conversion first, then user mdast plugins (math, etc.).
+    mdastPlugins: [calloutPlugin, ...user.mdastPlugins],
     hastPlugins: [
       // Convert Notion color/underline attributes to CSS classes.
       colorPlugin,
       // Rename Notion block/mention elements to PascalCase for the
       // components map.
       renamePlugin,
+      // User plugins: diagrams, math rendering, syntax highlighting, etc.
+      // notro({ shikiConfig }) appends the Shiki plugin last so that other
+      // plugins (e.g. Mermaid) see the original code blocks first.
+      ...user.hastPlugins,
       // Add heading ids and collect headings (rehype-slug equivalent).
       slugPlugin,
       // Populate TableOfContents from the collected headings.
@@ -648,7 +648,8 @@ export function buildSatteriPlugins(linkToPages: LinkToPages): SatteriPlugins {
       // Resolve notion.so links via the linkToPages map.
       makePageLinksPlugin(linkToPages),
     ],
-    features: NOTRO_SATTERI_FEATURES,
+    // User feature flags (e.g. math: true) merge over notro's defaults.
+    features: { ...NOTRO_SATTERI_FEATURES, ...user.features },
   };
 }
 

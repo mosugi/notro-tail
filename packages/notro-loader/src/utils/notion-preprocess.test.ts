@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { preprocessNotionMarkdown } from "./transformer.js";
+import { preprocessNotionMarkdown } from "./notion-preprocess.ts";
 
 // ============================================================
 // Fix 0: Migration — convert \$...\$ back to $...$
@@ -113,7 +113,8 @@ describe("Fix 2: callout directive normalization", () => {
     // Notion outputs nested callouts as tab-indented ::: callout blocks.
     // The inner "::: callout" should be normalized to ":::callout" and
     // its tab-indented body should be dedented after the outer dedent.
-    const input = "::: callout {icon=\"💡\"}\n\touter content\n\t::: callout {icon=\"🔥\"}\n\t\tinner content\n\t:::\n:::";
+    const input =
+      '::: callout {icon="💡"}\n\touter content\n\t::: callout {icon="🔥"}\n\t\tinner content\n\t:::\n:::';
     const output = preprocessNotionMarkdown(input);
     // Outer callout should be normalized
     expect(output).toContain(':::callout{icon="💡"}');
@@ -123,7 +124,7 @@ describe("Fix 2: callout directive normalization", () => {
     expect(output).not.toMatch(/^\t/m);
     // Structure: outer open, outer content, inner open, inner content, inner close, outer close
     expect(output).toBe(
-      ':::callout{icon="💡"}\nouter content\n:::callout{icon="🔥"}\ninner content\n:::\n:::'
+      ':::callout{icon="💡"}\nouter content\n:::callout{icon="🔥"}\ninner content\n:::\n:::',
     );
   });
 
@@ -135,13 +136,16 @@ describe("Fix 2: callout directive normalization", () => {
     expect(output.split(":::callout").length - 1).toBe(3);
     // No leading tabs anywhere in the output
     expect(output).not.toMatch(/^\t/m);
-    expect(output).toBe(":::callout\nouter\n:::callout\nmiddle\n:::callout\ninner\n:::\n:::\n:::");
+    expect(output).toBe(
+      ":::callout\nouter\n:::callout\nmiddle\n:::callout\ninner\n:::\n:::\n:::",
+    );
   });
 
   it("does not close outer callout early when inner ::: appears", () => {
     // Without nesting-counter fix, the outer callout would close at the first ":::"
     // (the inner closing :::), leaving the outer closing ::: as a stray line.
-    const input = ":::callout\n\touter text\n\t:::callout\n\t\tinner text\n\t:::\n\tmore outer\n:::";
+    const input =
+      ":::callout\n\touter text\n\t:::callout\n\t\tinner text\n\t:::\n\tmore outer\n:::";
     const output = preprocessNotionMarkdown(input);
     // "more outer" must be inside the outer callout (between :::callout and final :::)
     const lines = output.split("\n");
@@ -256,7 +260,8 @@ describe("Fix 6: synced_block stripping", () => {
   });
 
   it("strips <synced_block_reference> wrapper tags (reference occurrence)", () => {
-    const input = "<synced_block_reference>\n\tcontent line\n</synced_block_reference>";
+    const input =
+      "<synced_block_reference>\n\tcontent line\n</synced_block_reference>";
     const output = preprocessNotionMarkdown(input);
     expect(output).not.toContain("<synced_block_reference>");
     expect(output).not.toContain("</synced_block_reference>");
@@ -264,7 +269,8 @@ describe("Fix 6: synced_block stripping", () => {
   });
 
   it("dedents tab-indented content inside synced_block_reference", () => {
-    const input = "<synced_block_reference>\n\tsome content\n</synced_block_reference>";
+    const input =
+      "<synced_block_reference>\n\tsome content\n</synced_block_reference>";
     const output = preprocessNotionMarkdown(input);
     expect(output).toContain("some content");
     expect(output).not.toMatch(/^\tsome content/m);
@@ -358,7 +364,9 @@ describe("Fix 9: markdown links inside td cells", () => {
   it("converts [text](url) inside <td> to <a href>", () => {
     const input = "<td>[Click here](https://example.com)</td>";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toBe('<td><a href="https://example.com">Click here</a></td>');
+    expect(output).toBe(
+      '<td><a href="https://example.com">Click here</a></td>',
+    );
   });
 
   it("leaves plain text inside <td> unchanged", () => {
@@ -368,11 +376,10 @@ describe("Fix 9: markdown links inside td cells", () => {
   });
 
   it("converts multiple links inside a single <td>", () => {
-    const input =
-      "<td>[first](https://a.com) and [second](https://b.com)</td>";
+    const input = "<td>[first](https://a.com) and [second](https://b.com)</td>";
     const output = preprocessNotionMarkdown(input);
     expect(output).toBe(
-      '<td><a href="https://a.com">first</a> and <a href="https://b.com">second</a></td>'
+      '<td><a href="https://a.com">first</a> and <a href="https://b.com">second</a></td>',
     );
   });
 
@@ -581,7 +588,8 @@ describe("Fix 13: block boundary expansion", () => {
   });
 
   it("separates day/time entries from separator symbols (real-world vacancy data)", () => {
-    const input = "月曜日<br>10:00～18:00スタートまでの間に空きがございます。\n▫️\n火曜日<br>9:00スタート";
+    const input =
+      "月曜日<br>10:00～18:00スタートまでの間に空きがございます。\n▫️\n火曜日<br>9:00スタート";
     const output = preprocessNotionMarkdown(input);
     // ▫️ must be surrounded by blank lines (paragraph boundaries)
     expect(output).toContain("ございます。\n\n▫️\n\n火曜日");
@@ -591,9 +599,12 @@ describe("Fix 13: block boundary expansion", () => {
   });
 
   it("separates blocks that themselves contain <br> (multi-line blocks)", () => {
-    const input = "当店のお客様は\n7割くらいの方が多いです。\n▫️\n**週1or週2**で通われる方が多いです。";
+    const input =
+      "当店のお客様は\n7割くらいの方が多いです。\n▫️\n**週1or週2**で通われる方が多いです。";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toContain("当店のお客様は\n\n7割くらいの方が多いです。\n\n▫️\n\n");
+    expect(output).toContain(
+      "当店のお客様は\n\n7割くらいの方が多いです。\n\n▫️\n\n",
+    );
   });
 
   it("leaves <br> unchanged (rendering delegated to rehype-raw)", () => {
@@ -617,19 +628,26 @@ describe("Fix 15: bold marker conversion to <strong>", () => {
   it("converts basic **bold** to <strong>bold</strong>", () => {
     const input = "固定の場合でも**振替**は可能となります。";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toBe("固定の場合でも<strong>振替</strong>は可能となります。");
+    expect(output).toBe(
+      "固定の場合でも<strong>振替</strong>は可能となります。",
+    );
   });
 
   it("converts **text** adjacent to CJK close punctuation", () => {
     const input = "7割くらいの方が**『曜日時間固定』**となり、";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toBe("7割くらいの方が<strong>『曜日時間固定』</strong>となり、");
+    expect(output).toBe(
+      "7割くらいの方が<strong>『曜日時間固定』</strong>となり、",
+    );
   });
 
   it("converts multiple bold spans on the same line", () => {
-    const input = "**週1or週2**で通われる方が多いです。固定の場合でも**振替**は可能です。";
+    const input =
+      "**週1or週2**で通われる方が多いです。固定の場合でも**振替**は可能です。";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toBe("<strong>週1or週2</strong>で通われる方が多いです。固定の場合でも<strong>振替</strong>は可能です。");
+    expect(output).toBe(
+      "<strong>週1or週2</strong>で通われる方が多いです。固定の場合でも<strong>振替</strong>は可能です。",
+    );
   });
 
   it("does not convert ** inside inline code", () => {
@@ -660,7 +678,9 @@ describe("Fix 15: bold marker conversion to <strong>", () => {
     // Notion API sometimes produces **text ** (trailing space before closing **)
     const input = "固定の場合でも**振替 **は可能となります。";
     const output = preprocessNotionMarkdown(input);
-    expect(output).toBe("固定の場合でも<strong>振替</strong>は可能となります。");
+    expect(output).toBe(
+      "固定の場合でも<strong>振替</strong>は可能となります。",
+    );
   });
 });
 
@@ -669,14 +689,14 @@ describe("Fix 15: bold marker conversion to <strong>", () => {
 // ============================================================
 describe("Fix 3 edge case: color-annotated p surrounded by blank lines", () => {
   it("inserts blank line before <p color> when preceded by text", () => {
-    const input = "some text\n※日曜日は定休日です。 {color=\"red\"}\nmore text";
+    const input = 'some text\n※日曜日は定休日です。 {color="red"}\nmore text';
     const output = preprocessNotionMarkdown(input);
     // The color-annotated <p> must be preceded by a blank line
     expect(output).toMatch(/some text\n\n<p color="red">/);
   });
 
   it("inserts blank line after </p> when followed by text", () => {
-    const input = "some text\n※日曜日は定休日です。 {color=\"red\"}\nmore text";
+    const input = 'some text\n※日曜日は定休日です。 {color="red"}\nmore text';
     const output = preprocessNotionMarkdown(input);
     // The color-annotated <p> must be followed by a blank line
     expect(output).toMatch(/<\/p>\n\nmore text/);

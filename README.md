@@ -167,10 +167,9 @@ This repository is a **pnpm workspace monorepo** containing the following packag
 
 | Package | Path | Role |
 |---|---|---|
-| [`remark-nfm`](./packages/remark-nfm/) | `packages/remark-nfm/` | Pure remark plugin for Notion-flavored Markdown. Handles pre-parse normalization (10 fixes), `:::callout` directive syntax, and callout conversion. No Astro or Notion API dependencies — independently publishable to npm. |
-| [`notro-loader`](./packages/notro-loader/) | `packages/notro-loader/` | Astro + Notion API integration library. Provides the Content Loader, MDX compile pipeline (uses `remark-nfm` internally), and headless Astro components for all Notion block types. |
+| [`notro-loader`](./packages/notro-loader/) | `packages/notro-loader/` | Astro + Notion API integration library. Provides the Content Loader, the Sätteri MDX compile pipeline (including Notion markdown normalization), and headless Astro components for all Notion block types. |
 | [`notro-ui`](./packages/notro-ui/) | `packages/notro-ui/` | Copy-and-own styled components for `notro-loader` (shadcn style). Run `notro-ui add --all` to install components into your project — they become your code, editable directly. |
-| [`rehype-beautiful-mermaid`](./packages/rehype-beautiful-mermaid/) | `packages/rehype-beautiful-mermaid/` | Rehype plugin that renders Mermaid code blocks to inline SVG at build time. |
+| [`satteri-beautiful-mermaid`](./packages/satteri-beautiful-mermaid/) | `packages/satteri-beautiful-mermaid/` | Sätteri hast plugin that renders Mermaid code blocks to inline SVG at build time. |
 | [`create-notro`](./packages/create-notro/) | `packages/create-notro/` | CLI scaffolding tool. Run `npm create notro@latest` to choose a template and scaffold a new site. |
 | `notro-blog` (blog) | `templates/blog/` | Full-featured blog template — reference implementation with blog list, tags, pagination, RSS, and SEO. |
 | `notro-blank` (blank) | `templates/blank/` | Minimal starter — just pages and Notion content rendering. |
@@ -178,7 +177,7 @@ This repository is a **pnpm workspace monorepo** containing the following packag
 
 **Dependency graph:**
 ```
-remark-nfm  ←  notro-loader  ←  notro-ui  ←  templates/blog
+notro-loader  ←  notro-ui  ←  templates/blog
                                      ↑               ↑
                                create-notro  →  templates/blank
 ```

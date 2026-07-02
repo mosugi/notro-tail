@@ -1,18 +1,15 @@
 /**
  * MDX → Astro component compiler.
  *
- * Astro integration layer: wires the MDX plugin pipeline from mdx-pipeline.ts
- * into Astro's jsx-runtime, registers the result with Astro's component
- * renderer, and caches compiled output by content hash.
+ * Astro integration layer: wires the Sätteri plugin pipeline from
+ * satteri-pipeline.ts into Astro's jsx-runtime, registers the result with
+ * Astro's component renderer, and caches compiled output by content hash.
  */
 
-import { evaluate } from "@mdx-js/mdx";
-import { evaluate as satteriEvaluate } from "satteri";
-import { preprocessNotionMarkdown } from "remark-notro";
+import { evaluate } from "satteri";
 import { createHash } from "node:crypto";
-import { buildMdxPlugins } from "./mdx-pipeline.ts";
 import { buildSatteriPlugins } from "./satteri-pipeline.ts";
-import { getNotroProcessor } from "./notro-config.ts";
+import { preprocessNotionMarkdown } from "./notion-preprocess.ts";
 import type { LinkToPages } from "../types.ts";
 
 // Import Astro's jsx-runtime so evaluate() produces Astro VNodes.
@@ -46,41 +43,23 @@ export async function compileMdxForAstro(
 ) {
   const { linkToPages = {} } = options;
 
-  // evaluate() compiles + executes the MDX using Astro's jsx-runtime,
-  // producing a function that returns Astro VNodes.
-  // Wrapped in try-catch so a broken page does not crash the entire build.
-  //
-  // Two processors are supported:
-  // - Sätteri (default): Astro 7's Rust-based parser. Used when the notro()
-  //   integration has no user remark/rehype plugins configured.
-  //   remarkNfm's pre-parse normalization runs here explicitly because
-  //   Sätteri has no parser hook.
-  // - unified (@mdx-js/mdx): fallback when the user configures
-  //   notro({ remarkPlugins / rehypePlugins / shikiConfig }), which Sätteri
-  //   cannot run.
-  let mod: Awaited<ReturnType<typeof evaluate>>;
+  // Sätteri's evaluate() compiles + executes the MDX using Astro's
+  // jsx-runtime, producing a function that returns Astro VNodes.
+  // preprocessNotionMarkdown() runs explicitly first because Sätteri has no
+  // parser hook. Wrapped in try-catch so a broken page does not crash the
+  // entire build.
+  let mod: Record<string, unknown>;
   try {
-    if (getNotroProcessor() === "satteri") {
-      const { mdastPlugins, hastPlugins, features } =
-        buildSatteriPlugins(linkToPages);
-      mod = (await satteriEvaluate(preprocessNotionMarkdown(mdxSource), {
-        jsx,
-        jsxs,
-        Fragment,
-        features,
-        mdastPlugins,
-        hastPlugins,
-      })) as Awaited<ReturnType<typeof evaluate>>;
-    } else {
-      const { remarkPlugins, rehypePlugins } = buildMdxPlugins(linkToPages);
-      mod = await evaluate(mdxSource, {
-        jsx,
-        jsxs,
-        Fragment,
-        remarkPlugins,
-        rehypePlugins,
-      });
-    }
+    const { mdastPlugins, hastPlugins, features } =
+      buildSatteriPlugins(linkToPages);
+    mod = await evaluate(preprocessNotionMarkdown(mdxSource), {
+      jsx,
+      jsxs,
+      Fragment,
+      features,
+      mdastPlugins,
+      hastPlugins,
+    });
   } catch (error) {
     console.warn(
       `[notro] MDX compilation failed for markdown (${mdxSource.length} chars):`,
@@ -101,11 +80,10 @@ export async function compileMdxForAstro(
     __astro_tag_component__(FallbackContent, "astro:jsx");
     return FallbackContent;
   }
-  const MDXContent = mod.default;
+  const MDXContent = mod.default as (props: Record<string, unknown>) => unknown;
 
   // Pick up any `export const components = {...}` defined inside the MDX source.
-  const mdxInternalComponents =
-    (mod as Record<string, unknown>).components ?? {};
+  const mdxInternalComponents = mod.components ?? {};
 
   // Wraps MDXContent so props.components are merged in priority order:
   //   1. Caller's <Content components={{...}} />

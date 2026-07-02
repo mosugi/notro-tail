@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { mdxToJs } from "satteri";
-import { preprocessNotionMarkdown } from "remark-notro";
+import { preprocessNotionMarkdown } from "./notion-preprocess.ts";
 import { buildSatteriPlugins } from "./satteri-pipeline.ts";
 import type { LinkToPages } from "../types.ts";
 
