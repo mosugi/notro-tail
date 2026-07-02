@@ -109,7 +109,7 @@ NOTION_DATASOURCE_ID=<NOTION_ID>
 
 ### 6. Launch
 
-NotroTail needs Astro 6.0 and Node.js 24 or later.
+NotroTail needs Astro 7.0 and Node.js 24 or later.
 
 Install dependencies:
 

@@ -510,7 +510,7 @@ Set these in Claude Code on the Web → Settings → Environment Variables:
 
 - Node.js 24+
 - pnpm 10+
-- Astro 6 (installed via pnpm)
+- Astro 7 (installed via pnpm)
 
 ### Local Environment Variables
 

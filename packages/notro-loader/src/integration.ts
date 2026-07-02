@@ -40,6 +40,7 @@
 import type { AstroIntegration } from 'astro';
 import type { PluggableList } from 'unified';
 import mdx from '@astrojs/mdx';
+import { unified } from '@astrojs/markdown-remark';
 import { remarkNfm } from 'remark-notro';
 import { setNotroPlugins } from './utils/notro-config.ts';
 
@@ -147,10 +148,17 @@ export function notro(options: NotroOptions = {}): AstroIntegration {
 				// own astro:config:setup hook runs immediately after notro's hook.
 				updateConfig({
 					integrations: [mdx({
-						// Combine notro's core Notion remark plugins with user-provided ones.
-						remarkPlugins: [remarkNfm, ...remarkPlugins],
-						// User and built-in rehype plugins (math, diagrams, shiki, etc.).
-						rehypePlugins: allRehypePlugins,
+						// Astro 7 defaults `.mdx` processing to Satteri, which does not
+						// support remark/rehype plugins. notro's pipeline is built on
+						// remark/rehype (remarkNfm, rehypeRaw, ...), so pin the unified
+						// processor for `.mdx` files. This only overrides MDX -- plain
+						// `.md` files keep the project's `markdown.processor` setting.
+						processor: unified({
+							// Combine notro's core Notion remark plugins with user-provided ones.
+							remarkPlugins: [remarkNfm, ...remarkPlugins],
+							// User and built-in rehype plugins (math, diagrams, shiki, etc.).
+							rehypePlugins: allRehypePlugins,
+						}),
 						extendMarkdownConfig,
 					// `as any` is needed because Astro's TypeScript types for updateConfig
 					// only accept AstroIntegration[], but @astrojs/mdx returns its own

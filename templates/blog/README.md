@@ -1,6 +1,6 @@
 # notro-blog — Astro starter template
 
-`template/` is the Astro 6 starter template and reference implementation that ships with the monorepo.
+`template/` is the Astro 7 starter template and reference implementation that ships with the monorepo.
 It demonstrates every feature of the `notro` library and is fetched by `npm create notro@latest`. It can also be used as a starting point for your own Notion-backed site.
 
 ---
