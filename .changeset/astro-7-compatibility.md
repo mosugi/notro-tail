@@ -11,6 +11,8 @@ Breaking changes:
 - Requires Astro >=7.0.0 (`@astrojs/mdx` v7).
 - `notro({ remarkPlugins, rehypePlugins })` is removed. Use Sätteri plugins instead: `notro({ mdastPlugins, hastPlugins, features })`.
 - `notro({ shikiConfig })` now injects a Sätteri Shiki plugin and requires `shiki` (instead of `@shikijs/rehype`) to be installed.
-- The `remark-notro` package is discontinued; its `preprocessNotionMarkdown()` moved into `notro-loader` (exported from both `notro-loader` and `notro-loader/utils`). The remarkNfm plugin itself is superseded by Sätteri's `directive`/`gfm` features plus notro's callout plugin.
+- The `remark-notro` package is discontinued; its `preprocessNotionMarkdown()` moved into `notro-loader` (exported from both `notro-loader` and `notro-loader/utils`). The remarkNfm plugin itself is no longer needed: the Notion API emits callouts as `<callout>` XML tags, which flow through the components map like every other block element. Legacy `:::callout{…}` directive exports are still normalized to the XML form by `preprocessNotionMarkdown()`.
+- The callout component-map key is renamed from `callout` to `Callout`, matching the PascalCase keys of all other Notion block components. Update custom overrides: `components={{ Callout: MyCallout }}`.
+- Block color annotations on quotes, list items, and to-dos (`> text {color="red"}`) now render correctly: the markdown marker is preserved and the text is wrapped in a colored `<span>` (previously the whole line was wrapped in `<p color>`, turning the marker into literal text). Toggle-heading attribute lists (`{toggle="true"}`) are handled gracefully.
 - Math rendering: enable `features: { math: true }` and render the math nodes with a Sätteri mdast plugin (see the blog template's `satteriKatex()`) instead of `remark-math` + `rehype-katex`.
 - Mermaid diagrams: use `satteri-beautiful-mermaid` (successor of the discontinued `rehype-beautiful-mermaid`).

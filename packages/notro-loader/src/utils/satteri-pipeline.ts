@@ -10,7 +10,6 @@
  *   ─────────────────────────────────────────────────────────────────────
  *   Notion markdown quirks → preprocessNotionMarkdown() call before
  *                            evaluate (compile-mdx.ts / notion-preprocess.ts)
- *   :::callout directives  → features.directive + calloutPlugin (mdast)
  *   strikethrough/tasks    → features.gfm
  *   color attributes       → colorPlugin (hast)
  *   component renames      → renamePlugin (hast)
@@ -20,27 +19,27 @@
  *                            two plugins sharing ctx.data)
  *   notion.so page links   → pageLinksPlugin (hast)
  *
- * Raw HTML from Notion markdown needs no special handling: Sätteri's MDX
- * parser emits it as MDX JSX nodes.
+ * Notion block elements — callout, columns, video, table, mentions, ... —
+ * arrive as XML tags in the markdown, which Sätteri's MDX parser emits as
+ * MDX JSX nodes; renamePlugin routes them through the components map. No
+ * parser extensions beyond GFM are needed (legacy :::callout directive
+ * exports are normalized to <callout> XML by preprocessNotionMarkdown()).
  *
  * Replacement semantics: Sätteri applies queued mutations at the end of each
  * plugin's walk, and transforms queued on descendants of a replaced node are
- * dropped. Plugins that replace nodes (callout, colors, renames) therefore
- * transform the entire cloned subtree at the topmost matching node and skip
- * nodes whose ancestors already match, instead of relying on per-descendant
+ * dropped. Plugins that replace nodes (colors, renames) therefore transform
+ * the entire cloned subtree at the topmost matching node and skip nodes
+ * whose ancestors already match, instead of relying on per-descendant
  * visits.
  */
 
 import GithubSlugger from "github-slugger";
 import {
-  defineMdastPlugin,
   defineHastPlugin,
   type Features,
   type MdastPluginInput,
   type HastPluginInput,
-  type MdastNode,
   type HastNode,
-  type MdxJsxAttributeUnion,
   type MdxJsxFlowElementHast,
   type MdxJsxTextElementHast,
 } from "satteri";
@@ -64,13 +63,17 @@ function isMdxJsxNode(node: AnyNode): boolean {
 // ── Feature flags ──────────────────────────────────────────────────────────
 
 /**
- * Sätteri parser features matching remarkNfm's syntax support:
- * - directive: `:::callout{...}` container blocks
- * - gfm: strikethrough + task lists (+ tables). Footnotes are disabled for
- *   parity with the unified pipeline, which never enabled them.
+ * Sätteri parser features for Notion markdown:
+ * - gfm: strikethrough + task lists (+ tables). Footnotes are disabled —
+ *   Notion citations ([^URL]) are not GFM footnotes and Notion never emits
+ *   footnote definitions.
+ *
+ * The directive feature is intentionally NOT enabled: the Notion API emits
+ * callouts as <callout> XML tags, and enabling directives would let bare
+ * colons in prose (e.g. ports like :4321, times like 10:00) be mis-parsed
+ * as inline text directives.
  */
 export const NOTRO_SATTERI_FEATURES: Features = {
-  directive: true,
   gfm: { footnotes: false },
 };
 
@@ -113,6 +116,7 @@ function notionColorToClass(color: string): string {
 // ── Notion element name → PascalCase component name mapping ───────────────
 
 const NOTION_BLOCK_RENAMES = new Map<string, string>([
+  ["callout", "Callout"],
   ["table_of_contents", "TableOfContents"],
   ["video", "Video"],
   ["audio", "Audio"],
@@ -176,87 +180,6 @@ function hasMatchingAncestor(
   }
   return false;
 }
-
-// ── mdast: callout directive → <callout> element ───────────────────────────
-
-/** Converts a containerDirective mdast node into a <callout> MDX JSX node. */
-function calloutDirectiveToJsx(node: AnyNode): AnyNode {
-  const attrs = node.attributes ?? {};
-  const attributes: MdxJsxAttributeUnion[] = [];
-  if (attrs.color)
-    attributes.push({
-      type: "mdxJsxAttribute",
-      name: "color",
-      value: attrs.color,
-    });
-  if (attrs.icon)
-    attributes.push({
-      type: "mdxJsxAttribute",
-      name: "icon",
-      value: attrs.icon,
-    });
-  return {
-    type: "mdxJsxFlowElement",
-    name: "callout",
-    attributes,
-    children: (node.children ?? []).map(deepConvertCallouts),
-  };
-}
-
-/** Recursively converts nested callout directives inside a cloned subtree. */
-function deepConvertCallouts(node: AnyNode): AnyNode {
-  if (node?.type === "containerDirective" && node.name === "callout") {
-    return calloutDirectiveToJsx(node);
-  }
-  if (Array.isArray(node?.children)) {
-    return { ...node, children: node.children.map(deepConvertCallouts) };
-  }
-  return node;
-}
-
-/**
- * Converts :::callout{icon="💡" color="gray_bg"} container directives into
- * <callout icon color> MDX JSX elements so the component mapping
- * (notionComponents.callout) handles rendering.
- *
- * Equivalent to remarkNfm's callout transform, which sets hName/hProperties
- * on the directive node. Sätteri drops directive nodes it has no handler
- * for, so we replace the node with an MDX JSX element instead. Nested
- * callouts are converted inside the topmost replacement (see module doc).
- */
-const calloutPlugin = defineMdastPlugin({
-  name: "notro-callout",
-  containerDirective(node, ctx) {
-    if (node.name !== "callout") return;
-    if (
-      hasMatchingAncestor(
-        ctx,
-        node,
-        (n) => n.type === "containerDirective" && n.name === "callout",
-      )
-    ) {
-      return; // topmost callout replacement already converts this node
-    }
-    return calloutDirectiveToJsx(structuredClone(node)) as MdastNode;
-  },
-  // Sätteri's directive feature has no granular toggle, so enabling
-  // container directives (:::callout) also parses inline text directives
-  // (`:name`). Notion content never uses them, and colons in plain prose
-  // (e.g. "http://localhost:4321" or "10:00") would be eaten as bogus
-  // directives. remarkNfm strips the text-directive trigger from micromark
-  // for the same reason; here we restore the original source text instead.
-  textDirective(node, ctx) {
-    const start = node.position?.start?.offset;
-    const end = node.position?.end?.offset;
-    // Sätteri's Rust parser reports UTF-8 byte offsets, so slice the source
-    // as bytes — String.prototype.slice() would drift on multibyte content.
-    const value =
-      start != null && end != null
-        ? Buffer.from(ctx.source, "utf8").subarray(start, end).toString("utf8")
-        : `:${node.name}`;
-    return { type: "text", value } as MdastNode;
-  },
-});
 
 // ── hast: color/underline attributes → CSS classes ─────────────────────────
 
@@ -629,8 +552,9 @@ export type SatteriPlugins = {
 export function buildSatteriPlugins(linkToPages: LinkToPages): SatteriPlugins {
   const user = getNotroSatteriConfig();
   return {
-    // notro's callout conversion first, then user mdast plugins (math, etc.).
-    mdastPlugins: [calloutPlugin, ...user.mdastPlugins],
+    // User mdast plugins (math, etc.); notro itself needs none — Notion
+    // blocks arrive as XML/JSX and are handled at the hast stage.
+    mdastPlugins: [...user.mdastPlugins],
     hastPlugins: [
       // Convert Notion color/underline attributes to CSS classes.
       colorPlugin,

@@ -368,15 +368,14 @@ export default defineConfig({
 
 Defined in `packages/notro-loader/src/utils/satteri-pipeline.ts`, compiled via Sätteri's `evaluate()` (called from `compile-mdx.ts`). The pipeline is shared between the runtime Notion content path and static `.mdx` files via the `notro()` integration.
 
-`preprocessNotionMarkdown()` (notion-preprocess.ts) runs explicitly before `evaluate()` — Sätteri has no parser hook. Parser features: `directive: true` (`:::callout` blocks) and `gfm: { footnotes: false }` (strikethrough, task lists, tables). Raw HTML from Notion markdown needs no rehype-raw equivalent — Sätteri's MDX parser emits it as MDX JSX nodes.
+`preprocessNotionMarkdown()` (notion-preprocess.ts) runs explicitly before `evaluate()` — Sätteri has no parser hook. Parser features: `gfm: { footnotes: false }` (strikethrough, task lists, tables) only. The directive feature is intentionally OFF — the Notion API emits callouts as `<callout>` XML tags (like every other block element), and enabling directives would let bare colons in prose (`:4321`, `10:00`) be mis-parsed. Raw HTML from Notion markdown needs no rehype-raw equivalent — Sätteri's MDX parser emits it as MDX JSX nodes.
 
 **mdast plugins** (in order):
-1. `calloutPlugin` — converts `:::callout{icon color}` container directives to `<callout>` MDX JSX elements; restores stray inline text directives (e.g. `:4321` in URLs) as literal text using UTF-8 byte-offset source slices
-2. _(user-provided `mdastPlugins` run here — e.g. `satteriKatex()` renders math nodes enabled by `features: { math: true }`)_
+1. _(user-provided `mdastPlugins` only — e.g. `satteriKatex()` renders math nodes enabled by `features: { math: true }`; notro itself needs no mdast plugins since Notion blocks arrive as XML/JSX)_
 
 **hast plugins** (in order):
 1. `colorPlugin` — converts `color="gray_bg"` / `underline="true"` attributes on `<p>`, `<h1-h6>`, `<span>` elements to `notro-*` CSS classes
-2. `renamePlugin` — renames Notion block and mention elements from lowercase to PascalCase so MDX routes them through the `components` map (e.g. `video` → `Video`, `mention-user` → `MentionUser`)
+2. `renamePlugin` — renames Notion block and mention elements from lowercase to PascalCase so MDX routes them through the `components` map (e.g. `callout` → `Callout`, `video` → `Video`, `mention-user` → `MentionUser`)
 3. _(user-provided `hastPlugins` run here — e.g. `satteriMermaid()`)_
 4. Shiki plugin — injected automatically when `shikiConfig` is set (runs last of the user plugins)
 5. `slugPlugin` — adds `id` attributes to h1–h4 headings (github-slugger) and collects headings into `ctx.data`
@@ -412,7 +411,7 @@ const markdown = entry.data.markdown;
 Optional props:
 - `linkToPages` — `Record<string, { url: string; title: string }>` map for resolving internal Notion page links
 - `classMap` — `Partial<Record<ClassMapKeys, string>>` for injecting Tailwind classes into default components without replacing them
-- `components` — `Partial<NotionComponents>` for full component overrides (e.g. `{ callout: MyCallout }`)
+- `components` — `Partial<NotionComponents>` for full component overrides (e.g. `{ Callout: MyCallout }`)
 
 ### Markdown Preprocessing (`preprocessNotionMarkdown`)
 
@@ -422,13 +421,13 @@ Optional props:
 |-----|---------------|
 | 0 | (Migration) Escaped inline math `\$…\$` from old preprocessing bugs converted back to `$…$` |
 | 1 | `---` dividers without a preceding blank line are misread as setext H2 headings |
-| 2 | Callout directive syntax `"::: callout {…}"` → `":::callout{…}"`; tab-indented content inside callout blocks is dedented |
-| 3 | Block-level color annotations `{color="…"}` → raw `<p color="…">` HTML |
+| 2 | Callout normalization: legacy `:::callout{…}` directive exports are converted to the current `<callout …>` XML form; leading emoji in the first child line becomes the `icon` attribute. Children are dedented by Fix 10 |
+| 3 | Block-level color annotations: headings/paragraphs get raw `<h*/p color="…">` HTML; quote/list/to-do lines keep their markdown marker and wrap the text in `<span color>`; `{toggle="true"}` on headings is dropped; image color annotations are dropped |
 | 4 | `<table_of_contents/>` tag (underscore) wrapped in `<div>` for CommonMark HTML detection |
 | 5 | Inline equation `$\`…\`$` → `$…$` for remark-math |
 | 6 | `<synced_block>` wrapper stripped and content dedented |
 | 7 | `<empty-block/>` isolated with blank lines so it becomes a block-level element |
-| 8 | Closing tags `</table>`, `</details>`, `</columns>`, `</column>`, `</summary>` get a trailing blank line — without it, CommonMark HTML blocks swallow all following markdown as raw text |
+| 8 | Closing tags `</table>`, `</details>`, `</columns>`, `</column>`, `</summary>`, `</callout>` get a trailing blank line — without it, CommonMark HTML blocks swallow all following markdown as raw text |
 | 9 | Markdown link syntax `[text](url)` inside raw HTML `<td>` cells converted to `<a href>` tags, because remark does not process inline markdown inside raw HTML blocks |
 
 ### Layout Props (`Layout.astro`)

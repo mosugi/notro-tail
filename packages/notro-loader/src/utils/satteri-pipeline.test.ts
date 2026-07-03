@@ -24,41 +24,48 @@ async function compile(
   return result.code;
 }
 
-describe("satteri pipeline: callout conversion", () => {
-  it("converts :::callout directives into <callout> component lookups", async () => {
+describe("satteri pipeline: callout handling", () => {
+  it("routes <callout> XML blocks through the components map", async () => {
+    const code = await compile(
+      '<callout icon="💡" color="gray_bg">\n\tCallout **body** text\n</callout>\n',
+    );
+    expect(code).toContain("Callout");
+    expect(code).toContain('color="gray_bg"');
+    expect(code).toContain('icon="💡"');
+    expect(code).toContain("body");
+    expect(code).not.toContain("<callout");
+  });
+
+  it("extracts a leading emoji into the icon attribute when icon is absent", async () => {
+    const code = await compile("<callout>\n\t🔥 Hot tip body\n</callout>\n");
+    expect(code).toContain('icon="🔥"');
+    expect(code).toContain("Hot tip body");
+  });
+
+  it("converts legacy :::callout directive exports to components", async () => {
     const code = await compile(
       ':::callout{icon="💡" color="gray_bg"}\nBody text.\n:::\n',
     );
-    expect(code).toContain("_components.callout");
-    expect(code).toContain('color="gray_bg"');
+    expect(code).toContain("Callout");
     expect(code).toContain('icon="💡"');
     expect(code).toContain("Body text.");
+    expect(code).not.toContain(":::");
   });
 
-  it("converts nested callouts inside the outer replacement", async () => {
+  it("handles nested XML callouts", async () => {
     const code = await compile(
-      '::::callout{icon="a"}\nouter\n\n:::callout{icon="b"}\ninner\n:::\n::::\n',
+      '<callout icon="a">\n\touter\n\t<callout icon="b">\n\t\tinner\n\t</callout>\n</callout>\n',
     );
     expect(code).toContain('icon="a"');
     expect(code).toContain('icon="b"');
     expect(code).toContain("inner");
   });
 
-  it("restores text directives as literal text (ports remarkNfm's flow-only directive)", async () => {
+  it("leaves colons in prose intact (directives are not enabled)", async () => {
     const code = await compile("**http://localhost:4321** and 10:00\n");
-    expect(code).toContain("http://localhost");
     expect(code).toContain(":4321");
-    // ":00" is restored as its own text node, so the compiled JSX splits
-    // "10:00" into {" and 10"}{":00"} — assert on the restored fragment.
-    expect(code).toContain(":00");
+    expect(code).toContain("10:00");
     expect(code).not.toContain("_components.div");
-  });
-
-  it("restores text directives after multibyte content (byte-offset positions)", async () => {
-    const code = await compile(
-      "日本語のテキストです。サーバーは **http://localhost:4321** で起動。\n",
-    );
-    expect(code).toContain(":4321");
   });
 });
 

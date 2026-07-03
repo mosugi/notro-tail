@@ -28,7 +28,7 @@
  * ```
  *
  * When no options are provided, notro only applies its Notion-core plugins
- * (callout conversion, color classes, component renames, heading slugs, TOC,
+ * (color classes, component renames, heading slugs, TOC,
  * page links). Rich rendering features like math, syntax highlighting, and
  * diagrams are opt-in via the options above.
  */
@@ -74,7 +74,7 @@ export interface NotroOptions {
 
   /**
    * Extra Sätteri parser features merged over notro's defaults
-   * (directive: true, gfm: { footnotes: false }).
+   * (gfm: { footnotes: false }).
    *
    * @example { math: true }  // enable $...$ and $$...$$ parsing
    */
