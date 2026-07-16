@@ -10,7 +10,7 @@
  *
  * To override individual components, spread this object:
  *
- *   components={{ ...notroComponents, callout: MyCallout }}
+ *   components={{ ...notroComponents, Callout: MyCallout }}
  */
 import { makeHtmlElement } from 'notro-loader';
 
@@ -45,7 +45,7 @@ import TableCell        from './TableCell.astro';
 
 export const notroComponents = {
   // ── Notion-specific blocks ─────────────────────────────────────────────
-  callout:              Callout,
+  Callout:              Callout,
   details:              Toggle,
   summary:              ToggleTitle,
   columns:              Columns,

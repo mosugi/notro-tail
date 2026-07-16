@@ -6,7 +6,7 @@
  *
  * 0. (Migration) Escaped inline math:
  *    Old versions of this function incorrectly escaped inline math as \$...\$.
- *    This fix converts \$...\$ back to $...$ so remark-math can parse it.
+ *    This fix converts \$...\$ back to $...$ so math parsers can parse it.
  *
  * 1. Setext heading prevention:
  *    A "---" line immediately after non-blank text is interpreted as a setext
@@ -32,7 +32,7 @@
  *
  * 5. Inline equation format:
  *    Notion outputs inline math as $`E = mc^2`$ (backtick-delimited inside $...$).
- *    remark-math expects standard $E = mc^2$ (no backticks). We strip the backticks.
+ *    math parsers expect standard $E = mc^2$ (no backticks). We strip the backticks.
  *
  * 6. Underscore tags (synced_block):
  *    Same underscore issue as table_of_contents — <synced_block> wraps content
@@ -99,19 +99,74 @@ const LEADING_EMOJI_RE =
 // Block-level HTML closing tags that require a trailing blank line so that
 // CommonMark HTML blocks (type 6) end correctly and following markdown is not
 // consumed as raw HTML text.
-const BLOCK_CLOSING_TAGS = ["table", "details", "columns", "column", "summary"] as const;
+const BLOCK_CLOSING_TAGS = [
+  "table",
+  "details",
+  "columns",
+  "column",
+  "summary",
+  "callout",
+] as const;
 
 // LaTeX command names that may appear without a leading backslash in Notion's
 // math output. Sorted longest-first to prefer longer matches (e.g. "pmatrix"
 // before "matrix") when building the alternation.
 const LATEX_COMMANDS = [
-  "underbrace", "overline", "pmatrix", "bmatrix", "mathbb", "mathbf", "mathrm",
-  "epsilon", "partial", "approx", "matrix", "forall", "exists", "lambda",
-  "nabla", "cases", "infty", "sigma", "theta", "equiv", "alpha", "delta",
-  "right", "tilde", "begin", "gamma", "times", "cdot",
-  "frac", "sqrt", "prod", "left", "beta", "text", "ddot", "leq", "geq",
-  "neq", "hat", "bar", "vec", "dot", "end", "sum", "int", "lim", "sin",
-  "cos", "tan", "log", "ln", "mu", "pi", "pm", "div",
+  "underbrace",
+  "overline",
+  "pmatrix",
+  "bmatrix",
+  "mathbb",
+  "mathbf",
+  "mathrm",
+  "epsilon",
+  "partial",
+  "approx",
+  "matrix",
+  "forall",
+  "exists",
+  "lambda",
+  "nabla",
+  "cases",
+  "infty",
+  "sigma",
+  "theta",
+  "equiv",
+  "alpha",
+  "delta",
+  "right",
+  "tilde",
+  "begin",
+  "gamma",
+  "times",
+  "cdot",
+  "frac",
+  "sqrt",
+  "prod",
+  "left",
+  "beta",
+  "text",
+  "ddot",
+  "leq",
+  "geq",
+  "neq",
+  "hat",
+  "bar",
+  "vec",
+  "dot",
+  "end",
+  "sum",
+  "int",
+  "lim",
+  "sin",
+  "cos",
+  "tan",
+  "log",
+  "ln",
+  "mu",
+  "pi",
+  "pm",
+  "div",
 ];
 
 // Build regex: not preceded by backslash or opening brace, the command as a word.
@@ -126,77 +181,97 @@ const LATEX_CMD_RE = new RegExp(
 );
 
 /**
- * Convert raw <callout ...>...</callout> HTML blocks to :::callout{...}
- * container directive syntax, and extract the leading emoji as the icon
- * attribute when no icon= attribute is present.
- *
- * This is called at the top level and recursively inside processCalloutsDedent
- * so that nested callouts (which appear tab-indented inside the outer callout
- * body) are also converted after dedenting.
+ * Convert legacy :::callout{...} container-directive blocks (older Notion
+ * exports, and content written before the API switched to XML tags) into the
+ * current <callout ...>...</callout> XML form. Handles nesting: any other
+ * :::name directive opening keeps the closing ::: pairing intact.
  */
-function convertRawCallouts(input: string): string {
+function convertLegacyCalloutDirectives(input: string): string {
   const lines = input.split("\n");
   const out: string[] = [];
+  // Stack of open directives at any indentation: 'callout' or 'other'.
+  const stack: Array<"callout" | "other"> = [];
+  let inCodeFence = false;
+
+  for (const line of lines) {
+    // Fenced code blocks are literal content — never rewrite inside them.
+    if (/^\s*```/.test(line)) {
+      inCodeFence = !inCodeFence;
+      out.push(line);
+      continue;
+    }
+    if (inCodeFence) {
+      out.push(line);
+      continue;
+    }
+    const open = line.match(/^(\t*)::: ?callout ?(\{[^}]*\})?[ \t]*$/);
+    if (open) {
+      const attrs = open[2] ? " " + open[2].slice(1, -1).trim() : "";
+      out.push(`${open[1]}<callout${attrs}>`);
+      stack.push("callout");
+      continue;
+    }
+    const openOther = line.match(/^\t*:::\S/);
+    if (openOther) {
+      out.push(line);
+      stack.push("other");
+      continue;
+    }
+    const close = line.match(/^(\t*):::[ \t]*$/);
+    if (close && stack.length > 0) {
+      const kind = stack.pop();
+      out.push(kind === "callout" ? `${close[1]}</callout>` : line);
+      continue;
+    }
+    out.push(line);
+  }
+
+  return out.join("\n");
+}
+
+/**
+ * Extract a leading emoji from the first content line of <callout> blocks
+ * that have no icon= attribute, moving it into the attribute so the Callout
+ * component renders it consistently.
+ */
+function extractCalloutIcons(input: string): string {
+  const lines = input.split("\n");
+  const out: string[] = [];
+  let inCodeFence = false;
   let i = 0;
 
   while (i < lines.length) {
     const line = lines[i];
-    // Match <callout> or <callout attr="val" ...>
-    const openMatch = line.match(/^<callout((?:\s[^>]*)?)>/);
-
-    if (openMatch) {
-      const attrsStr = openMatch[1].trim();
-
-      // Extract existing icon= and color= attributes if present.
-      const iconMatch = attrsStr.match(/icon="([^"]*)"/);
-      const colorMatch = attrsStr.match(/color="([^"]*)"/);
-      let icon = iconMatch ? iconMatch[1] : "";
-      const color = colorMatch ? colorMatch[1] : "";
-
-      // Collect body lines until the matching </callout> (depth-aware).
-      const bodyLines: string[] = [];
-      i++;
-      let depth = 1;
-      while (i < lines.length) {
-        const bl = lines[i];
-        // A <callout ...> on a (possibly indented) line increases depth.
-        if (/^<callout/.test(bl.trimStart())) depth++;
-        // </callout> on any line (possibly indented) decreases depth.
-        // Use trim() (not ===) to tolerate trailing whitespace in API output.
-        if (bl.trimStart().trim() === "</callout>") {
-          depth--;
-          if (depth === 0) break;
-        }
-        bodyLines.push(bl);
-        i++;
-      }
-
-      // If no icon attribute, try to extract a leading emoji from the first
-      // content line (stripping the one leading tab Notion adds).
-      if (!icon && bodyLines.length > 0) {
-        const firstContent = bodyLines[0].replace(/^\t/, "");
-        const emojiMatch = firstContent.match(LEADING_EMOJI_RE);
-        if (emojiMatch) {
-          icon = emojiMatch[0];
-          // Replace the first body line with the content after the emoji.
-          bodyLines[0] = "\t" + firstContent.slice(icon.length).trimStart();
-        }
-      }
-
-      // Build the directive attributes string.
-      const attrParts: string[] = [];
-      if (icon) attrParts.push(`icon="${icon}"`);
-      if (color) attrParts.push(`color="${color}"`);
-      const attrs = attrParts.join(" ");
-
-      out.push(`:::callout${attrs ? `{${attrs}}` : ""}`);
-      out.push(...bodyLines);
-      out.push(":::");
-      i++; // skip the </callout> line
-    } else {
+    // Fenced code blocks are literal content — never rewrite inside them.
+    if (/^\s*```/.test(line)) {
+      inCodeFence = !inCodeFence;
       out.push(line);
       i++;
+      continue;
     }
+    const openMatch = inCodeFence
+      ? null
+      : line.match(/^(\t*)<callout((?:\s[^>]*)?)>[ \t]*$/);
+    if (!openMatch || /icon="/.test(openMatch[2])) {
+      out.push(line);
+      i++;
+      continue;
+    }
+    // Look at the first content line (skipping blank lines) for a leading emoji.
+    let j = i + 1;
+    while (j < lines.length && lines[j].trim() === "") j++;
+    const content = lines[j] ?? "";
+    const stripped = content.replace(/^\t*/, "");
+    const indent = content.slice(0, content.length - stripped.length);
+    const emojiMatch = stripped.match(LEADING_EMOJI_RE);
+    if (j < lines.length && emojiMatch && !/^<\/callout>/.test(stripped)) {
+      const icon = emojiMatch[0];
+      out.push(`${openMatch[1]}<callout icon="${icon}"${openMatch[2]}>`);
+      lines[j] = indent + stripped.slice(icon.length).trimStart();
+    } else {
+      out.push(line);
+    }
+    i++;
   }
 
   return out.join("\n");
@@ -204,10 +279,13 @@ function convertRawCallouts(input: string): string {
 
 export function preprocessNotionMarkdown(markdown: string): string {
   // Fix 0: Migration — convert \$...\$ (escaped dollars from old preprocessing bug)
-  // back to $...$ so remark-math can parse inline math correctly.
+  // back to $...$ so math parsers handle inline math correctly.
   // Pattern: backslash-dollar, non-newline/non-dollar content, backslash-dollar.
   // This is idempotent: $...$ (already correct) won't match since it has no backslash.
-  let result = markdown.replace(/\\\$([^$\n]+)\\\$/g, (_, content: string) => `$${content}$`);
+  let result = markdown.replace(
+    /\\\$([^$\n]+)\\\$/g,
+    (_, content: string) => `$${content}$`,
+  );
 
   // Fix 1: Ensure --- dividers have a blank line before them.
   // A "---" line immediately after any non-blank content (including after a
@@ -221,87 +299,47 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // Step 1b: Handle "text\n---" — no intervening line at all.
   result = result.replace(/([^\n])\n(---+)(\n|$)/g, "$1\n\n$2$3");
 
-  // Fix 2: Callout directive syntax.
-  // Notion's Public API outputs raw <callout icon="..." color="...">…</callout>
-  // HTML blocks. We first convert them to :::callout{...} directive syntax, then
-  // normalize any legacy "::: callout {attrs}" form (with spaces) to
-  // ":::callout{attrs}" as required by remark-directive.
-  //
-  // Callout blocks may be nested: the outer body is tab-indented, so
-  // convertRawCallouts handles each depth level, and processCalloutsDedent
-  // recursively processes the dedented inner content.
-  //
-  // This function also handles nested callouts that are tab-indented inside an
-  // outer callout block. After dedenting the outer callout body, the inner
-  // "::: callout" syntax is normalized and then processed recursively so that
-  // nested callouts are fully expanded at every level.
-  result = (function processCalloutsDedent(input: string): string {
-    // Convert raw <callout> HTML blocks to :::callout directive syntax.
-    // This runs at each recursion level so that newly-dedented inner callout
-    // opening lines are converted before the line scanner processes them.
-    const withDirectives = convertRawCallouts(input);
-
-    // Normalize "::: callout {attrs}" → ":::callout{attrs}" at any indentation level.
-    const normalized = withDirectives.replace(
-      /^::: callout( \{[^}]*\})?$/gm,
-      (_, attrs) => `:::callout${attrs?.trim() ?? ""}`,
-    );
-    const lines = normalized.split("\n");
-    const out: string[] = [];
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i];
-      if (/^:::callout/.test(line)) {
-        // Scan forward to find the matching closing ::: at depth 0.
-        // Only lines that start exactly with ":::" (no leading whitespace) count
-        // as directive markers at this nesting level.
-        let depth = 1;
-        let j = i + 1;
-        while (j < lines.length) {
-          if (/^:::/.test(lines[j])) {
-            if (lines[j] === ":::") {
-              depth--;
-              if (depth === 0) break;
-            } else {
-              // Any other opening directive (:::callout, :::note, etc.) increases depth.
-              depth++;
-            }
-          }
-          j++;
-        }
-        if (j < lines.length) {
-          // Found the matching closing :::; dedent content between open and close,
-          // then recursively process the dedented content so that nested callout
-          // blocks inside are also normalized and dedented.
-          const contentLines = lines.slice(i + 1, j);
-          const dedented = contentLines.map((cl) => cl.replace(/^\t/, "")).join("\n");
-          const processedContent = processCalloutsDedent(dedented);
-          out.push(line);
-          if (processedContent) out.push(...processedContent.split("\n"));
-          out.push(":::");
-          i = j + 1;
-        } else {
-          // No matching closing ::: found — emit the opening line as-is and continue.
-          out.push(line);
-          i++;
-        }
-      } else {
-        out.push(line);
-        i++;
-      }
-    }
-    return out.join("\n");
-  })(result);
+  // Fix 2: Callout normalization.
+  // The current Notion API outputs callouts as <callout icon="..." color="...">
+  // XML blocks — the same shape as every other Notion block element (details,
+  // columns, video, ...). Older exports used :::callout{...} container-directive
+  // syntax; convert those to the XML form for backward compatibility, then
+  // extract leading emoji icons into the icon attribute. Tab-indented children
+  // are dedented by Fix 10 together with the other container elements.
+  result = convertLegacyCalloutDirectives(result);
+  result = extractCalloutIcons(result);
 
   // Fix 3: Convert block-level color annotations to raw HTML.
+  // Headings may carry {color="..."} and/or {toggle="true"} attribute lists.
+  // Toggle headings are rendered as plain headings (their children already
+  // follow as regular blocks), so the toggle attribute is dropped.
   result = result.replace(
-    /^(#{1,6}) (.+?) \{color="([^"]+)"\}$/gm,
-    (_, hashes: string, text: string, color: string) =>
-      `<h${hashes.length} color="${color}">${text}</h${hashes.length}>`
+    /^(#{1,6}) (.+?) \{((?:color|toggle)="[^"]*"(?: (?:color|toggle)="[^"]*")*)\}$/gm,
+    (_, hashes: string, text: string, attrs: string) => {
+      const colorMatch = attrs.match(/color="([^"]+)"/);
+      return colorMatch
+        ? `<h${hashes.length} color="${colorMatch[1]}">${text}</h${hashes.length}>`
+        : `${hashes} ${text}`;
+    },
+  );
+  // Quote, list, and to-do blocks: keep the markdown marker (so the block
+  // still parses as a blockquote / list) and wrap the inline text in a
+  // colored <span> instead. Wrapping the whole line in <p color> would turn
+  // the marker into literal text.
+  result = result.replace(
+    /^(>[ \t]?)(.+?) \{color="([^"]+)"\}$/gm,
+    '$1<span color="$3">$2</span>',
   );
   result = result.replace(
+    /^([ \t]*(?:[-*+]|\d+\.)[ \t](?:\[[ xX]\][ \t])?)(.+?) \{color="([^"]+)"\}$/gm,
+    '$1<span color="$3">$2</span>',
+  );
+  // Image blocks: a color annotation cannot wrap the image markdown (raw HTML
+  // context would prevent the image from being parsed), so drop it.
+  result = result.replace(/^(!\[[^\]]*\]\([^)]*\)) \{color="[^"]+"\}$/gm, "$1");
+  result = result.replace(
     /^([^<#\n][^\n]*?) \{color="([^"]+)"\}$/gm,
-    '<p color="$2">$1</p>'
+    '<p color="$2">$1</p>',
   );
   // Ensure color-annotated <p> blocks are surrounded by blank lines so remark
   // treats them as standalone HTML blocks (CommonMark type 6) rather than
@@ -320,13 +358,16 @@ export function preprocessNotionMarkdown(markdown: string): string {
     (_, attrs: string | undefined) => {
       const innerAttrs = attrs ? attrs.trim() : "";
       return `<div><table_of_contents${innerAttrs ? ` ${innerAttrs}` : ""}/></div>\n`;
-    }
+    },
   );
 
-  // Fix 5: Convert Notion inline equation format $`...`$ → $...$ for remark-math.
+  // Fix 5: Convert Notion inline equation format $`...`$ → $...$ for math parsing.
   // Uses function-form replacement to avoid $ metacharacter confusion in the
   // replacement string.
-  result = result.replace(/\$`([^`]+)`\$/g, (_, content: string) => `$${content}$`);
+  result = result.replace(
+    /\$`([^`]+)`\$/g,
+    (_, content: string) => `$${content}$`,
+  );
 
   // Fix 6: Strip <synced_block> and <synced_block_reference> wrapper tags and dedent content.
   // These tags contain underscores, preventing CommonMark HTML block detection.
@@ -366,7 +407,7 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // literal string instead of proper HTML elements.
   const blockClosingPattern = new RegExp(
     `(<\\/(${BLOCK_CLOSING_TAGS.join("|")})>)\\n([^\\n])`,
-    "g"
+    "g",
   );
   result = result.replace(blockClosingPattern, "$1\n\n$3");
 
@@ -377,10 +418,14 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // The URL pattern handles one level of nested parentheses, e.g.:
   //   https://en.wikipedia.org/wiki/Rust_(programming_language)
   //   https://developer.mozilla.org/docs/Array/find()
-  const convertLinksInCell = (_: string, tag: string, content: string): string => {
+  const convertLinksInCell = (
+    _: string,
+    tag: string,
+    content: string,
+  ): string => {
     const linked = content.replace(
       /\[([^\]\n]+)\]\(([^()\n]*(?:\([^()\n]*\)[^()\n]*)*)\)/g,
-      '<a href="$2">$1</a>'
+      '<a href="$2">$1</a>',
     );
     return `<${tag}>${linked}</${tag}>`;
   };
@@ -402,13 +447,19 @@ export function preprocessNotionMarkdown(markdown: string): string {
       // Strip leading tabs to obtain the raw tag for matching.
       const stripped = line.trimStart();
 
-      if (/^<\/(details|columns|column)>/.test(stripped)) {
+      if (/^<\/(details|columns|column|callout)>/.test(stripped)) {
         // Closing tag: pop depth, then remove 'depth' tabs (after pop).
         if (depth > 0) depth--;
-        out.push(depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line);
-      } else if (/^<(details|columns|column)(?:\s[^>]*)?>$/.test(stripped)) {
+        out.push(
+          depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line,
+        );
+      } else if (
+        /^<(details|columns|column|callout)(?:\s[^>]*)?>$/.test(stripped)
+      ) {
         // Opening tag: remove 'depth' tabs before the tag, then push depth.
-        out.push(depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line);
+        out.push(
+          depth > 0 ? line.replace(new RegExp(`^\t{1,${depth}}`), "") : line,
+        );
         depth++;
       } else if (depth > 0) {
         // Content line inside a container: remove up to 'depth' leading tabs.
@@ -430,12 +481,12 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // Inline math $...$ (single line): replace via simple regex.
   result = result.replace(
     /\$([^$\n]+)\$/g,
-    (_, content: string) => `$${content.replace(LATEX_CMD_RE, "\\$1")}$`
+    (_, content: string) => `$${content.replace(LATEX_CMD_RE, "\\$1")}$`,
   );
   // Block math $$...$$ (potentially multi-line): replace via multiline regex.
   result = result.replace(
     /\$\$([\s\S]+?)\$\$/g,
-    (_, content: string) => `$$${content.replace(LATEX_CMD_RE, "\\$1")}$$`
+    (_, content: string) => `$$${content.replace(LATEX_CMD_RE, "\\$1")}$$`,
   );
 
   // Fix 12: Prevent blockquote lazy continuation.
@@ -451,13 +502,13 @@ export function preprocessNotionMarkdown(markdown: string): string {
   // collapsing all blocks into one <p>. We expand every single \n between non-blank
   // lines to \n\n so remark creates separate block-level elements.
   //
-  // Protected regions (fenced code blocks ``` and directive blocks :::) are split out
-  // and passed through unchanged since their internal newlines are significant.
+  // Protected regions (fenced code blocks ```) are split out and passed
+  // through unchanged since their internal newlines are significant.
   // All other segments have single \n between non-blank lines expanded to \n\n.
   //
   // Note: <br> tags are left as-is; rehype-raw handles them downstream.
   result = result
-    .split(/((?:^|\n)```[\s\S]*?(?:```\s*(?:\n|$)|$)|(?:^|\n):::[\s\S]*?(?:\n:::[ \t]*(?:\n|$)|$))/g)
+    .split(/((?:^|\n)```[\s\S]*?(?:```\s*(?:\n|$)|$))/g)
     .map((segment, i) => {
       if (i % 2 === 1) return segment; // protected block (fenced code / directive) — pass through
       // Expand single \n between non-blank lines to \n\n.
@@ -488,7 +539,10 @@ export function preprocessNotionMarkdown(markdown: string): string {
     .map((segment, i) => {
       // Odd-indexed segments are code spans / fenced blocks — pass through unchanged.
       if (i % 2 === 1) return segment;
-      return segment.replace(/\*\*([^\n*]+?)\*\*/g, (_, content) => `<strong>${content.trimEnd()}</strong>`);
+      return segment.replace(
+        /\*\*([^\n*]+?)\*\*/g,
+        (_, content) => `<strong>${content.trimEnd()}</strong>`,
+      );
     })
     .join("");
 

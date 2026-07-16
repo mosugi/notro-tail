@@ -20,7 +20,7 @@
     "gallery:build": "pnpm --filter notro-gallery run build",
     "test": "pnpm -r run test",
     "format": "pnpm -r run format",
-    "build:packages": "pnpm --filter remark-notro --filter rehype-beautiful-mermaid --filter create-notro --filter notro-md-sync run build",
+    "build:packages": "pnpm --filter satteri-beautiful-mermaid --filter create-notro --filter notro-md-sync run build",
     "changeset-version": "changeset version",
     "changeset-publish": "pnpm run build:packages && changeset publish",
     "reflect": "notro-md-sync publish content/docs --db ${NOTION_DATASOURCE_ID_DOCS:-$NOTION_DATASOURCE_ID}",
@@ -34,7 +34,7 @@
     "onlyBuiltDependencies": ["esbuild", "sharp"],
     "overrides": {
       "notro-loader": "workspace:*",
-      "rehype-beautiful-mermaid": "workspace:*"
+      "satteri-beautiful-mermaid": "workspace:*"
     }
   },
   "devDependencies": {

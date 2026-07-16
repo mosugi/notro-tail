@@ -1,0 +1,586 @@
+/**
+ * Sätteri plugin pipeline for Notion Enhanced Markdown.
+ *
+ * notro is built on Sätteri, Astro 7's Rust-based Markdown/MDX processor.
+ * This module defines notro's core plugins on Sätteri's mdast/hast plugin
+ * API and combines them with the user plugins configured via the notro()
+ * integration:
+ *
+ *   concern                → implementation
+ *   ─────────────────────────────────────────────────────────────────────
+ *   Notion markdown quirks → preprocessNotionMarkdown() call before
+ *                            evaluate (compile-mdx.ts / notion-preprocess.ts)
+ *   strikethrough/tasks    → features.gfm
+ *   color attributes       → colorPlugin (hast)
+ *   component renames      → renamePlugin (hast)
+ *   heading ids            → slugPlugin (hast, github-slugger)
+ *   table of contents      → slugPlugin + tocInjectPlugin (Sätteri walks
+ *                            once per plugin, so the two-pass TOC becomes
+ *                            two plugins sharing ctx.data)
+ *   notion.so page links   → pageLinksPlugin (hast)
+ *
+ * Notion block elements — callout, columns, video, table, mentions, ... —
+ * arrive as XML tags in the markdown, which Sätteri's MDX parser emits as
+ * MDX JSX nodes; renamePlugin routes them through the components map. No
+ * parser extensions beyond GFM are needed (legacy :::callout directive
+ * exports are normalized to <callout> XML by preprocessNotionMarkdown()).
+ *
+ * Replacement semantics: Sätteri applies queued mutations at the end of each
+ * plugin's walk, and transforms queued on descendants of a replaced node are
+ * dropped. Plugins that replace nodes (colors, renames) therefore transform
+ * the entire cloned subtree at the topmost matching node and skip nodes
+ * whose ancestors already match, instead of relying on per-descendant
+ * visits.
+ */
+
+import GithubSlugger from "github-slugger";
+import {
+  defineHastPlugin,
+  type Features,
+  type MdastPluginInput,
+  type HastPluginInput,
+  type HastNode,
+  type MdxJsxFlowElementHast,
+  type MdxJsxTextElementHast,
+} from "satteri";
+import type { LinkToPages } from "../types.ts";
+import { getNotroSatteriConfig } from "./notro-config.ts";
+
+// Loosely-typed tree node for deep subtree transforms. Sätteri's HastNode /
+// MdastNode unions don't allow uniform child traversal, so the deep helpers
+// treat nodes structurally.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyNode = any;
+
+type MdxJsxHast = MdxJsxFlowElementHast | MdxJsxTextElementHast;
+
+function isMdxJsxNode(node: AnyNode): boolean {
+  return (
+    node?.type === "mdxJsxFlowElement" || node?.type === "mdxJsxTextElement"
+  );
+}
+
+// ── Feature flags ──────────────────────────────────────────────────────────
+
+/**
+ * Sätteri parser features for Notion markdown:
+ * - gfm: strikethrough + task lists (+ tables). Footnotes are disabled —
+ *   Notion citations ([^URL]) are not GFM footnotes and Notion never emits
+ *   footnote definitions.
+ *
+ * The directive feature is intentionally NOT enabled: the Notion API emits
+ * callouts as <callout> XML tags, and enabling directives would let bare
+ * colons in prose (e.g. ports like :4321, times like 10:00) be mis-parsed
+ * as inline text directives.
+ */
+export const NOTRO_SATTERI_FEATURES: Features = {
+  gfm: { footnotes: false },
+};
+
+// ── Notion color attribute → Tailwind class conversion ────────────────────
+
+const NOTION_TEXT_CLASSES: Record<string, string> = {
+  gray: "text-[var(--notro-gray)]",
+  brown: "text-[var(--notro-brown)]",
+  orange: "text-[var(--notro-orange)]",
+  yellow: "text-[var(--notro-yellow)]",
+  green: "text-[var(--notro-green)]",
+  blue: "text-[var(--notro-blue)]",
+  purple: "text-[var(--notro-purple)]",
+  pink: "text-[var(--notro-pink)]",
+  red: "text-[var(--notro-red)]",
+};
+
+const NOTION_BG_CLASSES: Record<string, string> = {
+  gray: "bg-[var(--notro-gray-bg)]",
+  brown: "bg-[var(--notro-brown-bg)]",
+  orange: "bg-[var(--notro-orange-bg)]",
+  yellow: "bg-[var(--notro-yellow-bg)]",
+  green: "bg-[var(--notro-green-bg)]",
+  blue: "bg-[var(--notro-blue-bg)]",
+  purple: "bg-[var(--notro-purple-bg)]",
+  pink: "bg-[var(--notro-pink-bg)]",
+  red: "bg-[var(--notro-red-bg)]",
+};
+
+function notionColorToClass(color: string): string {
+  if (!color || color === "default") return "";
+  if (color.endsWith("_bg")) {
+    return NOTION_BG_CLASSES[color.slice(0, -3)] ?? "";
+  } else if (color.endsWith("_background")) {
+    return NOTION_BG_CLASSES[color.slice(0, -"_background".length)] ?? "";
+  }
+  return NOTION_TEXT_CLASSES[color] ?? "";
+}
+
+// ── Notion element name → PascalCase component name mapping ───────────────
+
+const NOTION_BLOCK_RENAMES = new Map<string, string>([
+  ["callout", "Callout"],
+  ["table_of_contents", "TableOfContents"],
+  ["video", "Video"],
+  ["audio", "Audio"],
+  ["file", "FileBlock"],
+  ["pdf", "PdfBlock"],
+  ["columns", "Columns"],
+  ["column", "Column"],
+  ["page", "PageRef"],
+  ["database", "DatabaseRef"],
+  ["details", "Details"],
+  ["summary", "Summary"],
+  ["empty-block", "EmptyBlock"],
+  ["table", "TableBlock"],
+  ["thead", "TableHead"],
+  ["tbody", "TableBody"],
+  ["colgroup", "TableColgroup"],
+  ["col", "TableCol"],
+  ["tr", "TableRow"],
+  ["th", "TableHeaderCell"],
+  ["td", "TableCell"],
+]);
+
+const NOTION_MENTION_RENAMES = new Map<string, string>([
+  ["mention-user", "MentionUser"],
+  ["mention-page", "MentionPage"],
+  ["mention-database", "MentionDatabase"],
+  ["mention-data-source", "MentionDataSource"],
+  ["mention-agent", "MentionAgent"],
+  ["mention-date", "MentionDate"],
+]);
+
+function renameFor(name: string | null | undefined): string | undefined {
+  if (!name) return undefined;
+  return NOTION_BLOCK_RENAMES.get(name) ?? NOTION_MENTION_RENAMES.get(name);
+}
+
+// All lowercase names the rename plugin must visit (block + mention).
+const RENAME_FILTER = [
+  ...NOTION_BLOCK_RENAMES.keys(),
+  ...NOTION_MENTION_RENAMES.keys(),
+];
+
+// ── Ancestor check helper ──────────────────────────────────────────────────
+
+/**
+ * True when some ancestor of `node` satisfies `matches`. Used by replacing
+ * plugins to yield to the topmost matching node: Sätteri drops transforms
+ * queued on descendants of an already-replaced node, so only the topmost
+ * match replaces (and deep-transforms) its subtree.
+ */
+function hasMatchingAncestor(
+  ctx: { parent: (node: AnyNode) => AnyNode | undefined },
+  node: AnyNode,
+  matches: (node: AnyNode) => boolean,
+): boolean {
+  let current = ctx.parent(node);
+  while (current) {
+    if (matches(current)) return true;
+    if (current.type === "root") break;
+    current = ctx.parent(current);
+  }
+  return false;
+}
+
+// ── hast: color/underline attributes → CSS classes ─────────────────────────
+
+const COLORABLE_TAGS = ["p", "h1", "h2", "h3", "h4", "h5", "h6", "span"];
+
+function isColorableName(name: string | null | undefined): boolean {
+  return !!name && COLORABLE_TAGS.includes(name);
+}
+
+/** Reads a string-valued attribute from an MDX JSX hast node. */
+function getMdxAttr(node: MdxJsxHast, name: string): string | undefined {
+  const attr = node.attributes?.find(
+    (a) => a.type === "mdxJsxAttribute" && a.name === name,
+  );
+  return attr && typeof attr.value === "string" ? attr.value : undefined;
+}
+
+/** True when the node carries a color (or span underline) attribute to convert. */
+function hasColorTrigger(node: AnyNode): boolean {
+  if (isMdxJsxNode(node)) {
+    if (!isColorableName(node.name)) return false;
+    const color = getMdxAttr(node, "color");
+    const underline =
+      node.name === "span" && getMdxAttr(node, "underline") === "true";
+    return color !== undefined || underline;
+  }
+  if (node?.type === "element") {
+    if (!isColorableName(node.tagName)) return false;
+    const props = node.properties ?? {};
+    return (
+      typeof props.color === "string" ||
+      (node.tagName === "span" &&
+        (props.underline === "true" || props.underline === true))
+    );
+  }
+  return false;
+}
+
+/** Applies the color/underline → class conversion to a single cloned node in place. */
+function applyColorTransform(node: AnyNode): void {
+  if (isMdxJsxNode(node)) {
+    const isSpan = node.name === "span";
+    const classesToAdd: string[] = [];
+    const attrs: AnyNode[] = Array.isArray(node.attributes)
+      ? node.attributes
+      : [];
+    node.attributes = attrs.filter((attr) => {
+      if (attr.type !== "mdxJsxAttribute") return true;
+      if (attr.name === "color") {
+        const cls = notionColorToClass(String(attr.value ?? ""));
+        if (cls) classesToAdd.push(cls);
+        return false;
+      }
+      if (
+        isSpan &&
+        attr.name === "underline" &&
+        String(attr.value) === "true"
+      ) {
+        classesToAdd.push("underline");
+        return false;
+      }
+      return true;
+    });
+    if (classesToAdd.length === 0) return;
+    const classAttr = node.attributes.find(
+      (attr: AnyNode) =>
+        attr.type === "mdxJsxAttribute" &&
+        (attr.name === "class" || attr.name === "className"),
+    );
+    if (classAttr) {
+      classAttr.value = [String(classAttr.value ?? ""), ...classesToAdd]
+        .filter(Boolean)
+        .join(" ");
+    } else {
+      node.attributes.push({
+        type: "mdxJsxAttribute",
+        name: "class",
+        value: classesToAdd.join(" "),
+      });
+    }
+    return;
+  }
+
+  if (node?.type === "element") {
+    const props = { ...(node.properties ?? {}) } as Record<string, unknown>;
+    const isSpan = node.tagName === "span";
+    const classes: string[] = [];
+    if (typeof props.color === "string") {
+      const cls = notionColorToClass(props.color);
+      delete props.color;
+      if (cls) classes.push(cls);
+    }
+    if (isSpan && (props.underline === "true" || props.underline === true)) {
+      delete props.underline;
+      classes.push("underline");
+    }
+    if (classes.length > 0) {
+      const existing = props.className;
+      props.className = existing
+        ? Array.isArray(existing)
+          ? [...existing, ...classes]
+          : [String(existing), ...classes]
+        : classes;
+    }
+    node.properties = props;
+  }
+}
+
+/** Applies the color transform to every matching node in a cloned subtree. */
+function deepApplyColors(node: AnyNode): void {
+  if (hasColorTrigger(node)) applyColorTransform(node);
+  if (Array.isArray(node?.children)) {
+    for (const child of node.children) deepApplyColors(child);
+  }
+}
+
+function makeColorVisit() {
+  return {
+    filter: COLORABLE_TAGS,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    visit(node: AnyNode, ctx: any) {
+      if (!hasColorTrigger(node)) return;
+      if (hasMatchingAncestor(ctx, node, hasColorTrigger)) return; // topmost handles it
+      const clone = structuredClone(node);
+      deepApplyColors(clone);
+      return clone as HastNode;
+    },
+  };
+}
+
+/**
+ * Converts Notion `color` / `underline` attributes to Tailwind CSS-variable
+ * classes on both plain hast elements and MDX JSX nodes.
+ * Port of rehypeNotionColorPlugin.
+ */
+const colorPlugin = defineHastPlugin({
+  name: "notro-colors",
+  element: makeColorVisit(),
+  mdxJsxFlowElement: makeColorVisit(),
+  mdxJsxTextElement: makeColorVisit(),
+});
+
+// ── hast: lowercase Notion elements → PascalCase component names ───────────
+
+/** Renames every matching MDX JSX node in a cloned subtree in place. */
+function deepApplyRenames(node: AnyNode): void {
+  if (isMdxJsxNode(node)) {
+    const renamed = renameFor(node.name);
+    if (renamed) node.name = renamed;
+  }
+  if (Array.isArray(node?.children)) {
+    for (const child of node.children) deepApplyRenames(child);
+  }
+}
+
+function makeRenameVisit() {
+  return {
+    filter: RENAME_FILTER,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    visit(node: AnyNode, ctx: any) {
+      if (!renameFor(node.name)) return;
+      if (
+        hasMatchingAncestor(
+          ctx,
+          node,
+          (n) => isMdxJsxNode(n) && !!renameFor(n.name),
+        )
+      ) {
+        return; // topmost renameable ancestor deep-renames this node
+      }
+      const clone = structuredClone(node);
+      deepApplyRenames(clone);
+      return clone as HastNode;
+    },
+  };
+}
+
+/**
+ * Renames Notion block/mention elements from lowercase to PascalCase so the
+ * MDX compiler emits a components-map lookup (_components.Video) instead of
+ * a literal HTML tag. Port of rehypeBlockElementsPlugin +
+ * rehypeInlineMentionsPlugin. Sätteri's setProperty writes MDX JSX
+ * attributes, not the node name, so renaming replaces the node — nested
+ * renameables (e.g. tr/td inside table) are renamed within the topmost
+ * replacement.
+ */
+const renamePlugin = defineHastPlugin({
+  name: "notro-renames",
+  mdxJsxFlowElement: makeRenameVisit(),
+  mdxJsxTextElement: makeRenameVisit(),
+});
+
+// ── hast: heading ids (rehype-slug equivalent) + heading collection ────────
+
+const HEADING_TAGS = ["h1", "h2", "h3", "h4"];
+
+type TocHeading = { level: number; id: string; text: string };
+
+declare module "satteri" {
+  interface DataMap {
+    notroTocHeadings: TocHeading[];
+  }
+}
+
+/**
+ * Adds GitHub-style id attributes to h1–h4 headings and collects them for
+ * the TOC plugin. Uses github-slugger — the same library rehype-slug uses —
+ * so ids match the unified pipeline. Defined as a factory so the slugger
+ * counter resets per document.
+ *
+ * Note: rehype-slug slugs h1–h6; notro's TOC only reads h1–h4, and Notion
+ * markdown never emits h5/h6 headings, so slugging h1–h4 is equivalent for
+ * Notion content.
+ */
+const slugPlugin: HastPluginInput = () => {
+  const slugger = new GithubSlugger();
+  return defineHastPlugin({
+    name: "notro-slugs",
+    element: {
+      filter: HEADING_TAGS,
+      visit(node, ctx) {
+        const props = (node.properties ?? {}) as Record<string, unknown>;
+        const text = ctx.textContent(node);
+        let id =
+          typeof props.id === "string" && props.id ? props.id : undefined;
+        if (!id) {
+          id = slugger.slug(text);
+          ctx.setProperty(node, "id", id);
+        }
+        const headings = (ctx.data.notroTocHeadings ??= []);
+        headings.push({
+          level: parseInt(node.tagName.slice(1), 10),
+          id,
+          text,
+        });
+      },
+    },
+  });
+};
+
+// ── hast: populate <TableOfContents> from collected headings ───────────────
+
+/**
+ * Replaces the children of every TableOfContents element (renamed from
+ * <table_of_contents/> by renamePlugin) with a <ul> of anchor links.
+ * Sätteri plugins each walk the tree once in order, so the heading
+ * collection in slugPlugin has completed before this plugin runs — the
+ * classic rehype two-pass pattern becomes two sequential plugins sharing
+ * ctx.data.
+ */
+const tocInjectPlugin = defineHastPlugin({
+  name: "notro-toc",
+  mdxJsxFlowElement: {
+    filter: ["TableOfContents"],
+    visit(node, ctx) {
+      const headings = ctx.data.notroTocHeadings ?? [];
+      if (headings.length === 0) return;
+      const listItems = headings.map((h) => ({
+        type: "element" as const,
+        tagName: "li",
+        properties: { "data-toc-item": "", "data-toc-level": h.level },
+        children: [
+          {
+            type: "element" as const,
+            tagName: "a",
+            properties: { href: `#${h.id}`, "data-toc-link": "" },
+            children: [{ type: "text" as const, value: h.text }],
+          },
+        ],
+      }));
+      return {
+        ...structuredClone(node),
+        children: [
+          {
+            type: "element" as const,
+            tagName: "ul",
+            properties: { "data-toc-list": "" },
+            children: listItems,
+          },
+        ],
+      } as HastNode;
+    },
+  },
+});
+
+// ── hast: resolve Notion page/database URLs ────────────────────────────────
+
+function resolveNotionUrl(
+  url: string,
+  linkToPages: LinkToPages,
+): { href: string; isExternal: boolean } {
+  // Notion URLs end with the page ID (32-char hex, with or without dashes).
+  // endsWith() prevents a shorter ID from matching a longer ID that happens
+  // to contain it as a substring.
+  const urlNoDash = url.replace(/-/g, "");
+  for (const [pageId, info] of Object.entries(linkToPages)) {
+    const idNoDash = pageId.replace(/-/g, "");
+    if (urlNoDash === idNoDash || urlNoDash.endsWith(idNoDash)) {
+      return { href: `/${info.url}`, isExternal: false };
+    }
+  }
+  return { href: url, isExternal: true };
+}
+
+const LINKABLE_MDX_NAMES = [
+  "PageRef",
+  "DatabaseRef",
+  "MentionPage",
+  "MentionDatabase",
+];
+
+/**
+ * Resolves notion.so URLs to site-relative paths using the linkToPages map.
+ * Handles <a href> hast elements and the url attribute on PageRef /
+ * DatabaseRef / MentionPage / MentionDatabase MDX JSX nodes (already renamed
+ * by renamePlugin). Port of resolvePageLinksPlugin. Only uses setProperty
+ * (no replacements), so nested nodes are safe to mutate directly.
+ */
+function makePageLinksPlugin(linkToPages: LinkToPages): HastPluginInput {
+  const mdxVisit = {
+    filter: LINKABLE_MDX_NAMES,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    visit(node: AnyNode, ctx: any) {
+      const url = getMdxAttr(node, "url");
+      if (!url) return;
+      const { href } = resolveNotionUrl(url, linkToPages);
+      if (href !== url) {
+        // setProperty on MDX JSX nodes writes the named attribute.
+        ctx.setProperty(node, "url", href);
+      }
+    },
+  };
+  return defineHastPlugin({
+    name: "notro-page-links",
+    element: {
+      filter: ["a"],
+      visit(node, ctx) {
+        const rawHref = node.properties?.href;
+        const href = typeof rawHref === "string" ? rawHref : undefined;
+        if (!href?.includes("notion.so")) return;
+        const { href: resolved, isExternal } = resolveNotionUrl(
+          href,
+          linkToPages,
+        );
+        if (!isExternal) {
+          ctx.setProperty(node, "href", resolved);
+        }
+      },
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mdxJsxFlowElement: mdxVisit as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mdxJsxTextElement: mdxVisit as any,
+  });
+}
+
+// ── Plugin bundle factory ──────────────────────────────────────────────────
+
+export type SatteriPlugins = {
+  mdastPlugins: MdastPluginInput[];
+  hastPlugins: HastPluginInput[];
+  features: Features;
+};
+
+/**
+ * Returns the Sätteri plugin configuration for Notion MDX: notro's core
+ * plugins combined with the user plugins stored by the notro() integration
+ * (see notro-config.ts).
+ */
+export function buildSatteriPlugins(linkToPages: LinkToPages): SatteriPlugins {
+  const user = getNotroSatteriConfig();
+  return {
+    // User mdast plugins (math, etc.); notro itself needs none — Notion
+    // blocks arrive as XML/JSX and are handled at the hast stage.
+    mdastPlugins: [...user.mdastPlugins],
+    hastPlugins: [
+      // Convert Notion color/underline attributes to CSS classes.
+      colorPlugin,
+      // Rename Notion block/mention elements to PascalCase for the
+      // components map.
+      renamePlugin,
+      // User plugins: diagrams, math rendering, syntax highlighting, etc.
+      // notro({ shikiConfig }) appends the Shiki plugin last so that other
+      // plugins (e.g. Mermaid) see the original code blocks first.
+      ...user.hastPlugins,
+      // Add heading ids and collect headings (rehype-slug equivalent).
+      slugPlugin,
+      // Populate TableOfContents from the collected headings.
+      tocInjectPlugin,
+      // Resolve notion.so links via the linkToPages map.
+      makePageLinksPlugin(linkToPages),
+    ],
+    // User feature flags (e.g. math: true) merge over notro's defaults.
+    features: { ...NOTRO_SATTERI_FEATURES, ...user.features },
+  };
+}
+
+/**
+ * Sätteri plugins without a linkToPages map — used by the notro() integration
+ * for static .mdx files, where no Notion link resolution is possible.
+ */
+export function buildStaticSatteriPlugins(): SatteriPlugins {
+  return buildSatteriPlugins({});
+}

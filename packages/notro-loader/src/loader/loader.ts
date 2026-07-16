@@ -283,9 +283,9 @@ export function loader({
             }
 
             // Store raw markdown from the Notion API.
-            // remarkNfm in the MDX compile pipeline (compile-mdx.ts) runs
-            // preprocessNotionMarkdown() at parse time, so preprocessing
-            // does not need to happen here.
+            // compileMdxForAstro() (compile-mdx.ts) runs
+            // preprocessNotionMarkdown() before each compile, so
+            // preprocessing does not need to happen here.
             const rawMarkdown = markdownResponse.markdown;
 
             const entryId = getEntryId(page);

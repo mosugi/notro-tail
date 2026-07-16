@@ -10,7 +10,7 @@
  *
  * To override individual components, spread this object:
  *
- *   components={{ ...notroComponents, callout: MyCallout }}
+ *   components={{ ...notroComponents, Callout: MyCallout }}
  *
  * Note: standard HTML elements (ul, ol, li, a, strong, em, pre, hr, etc.)
  * are intentionally NOT overridden — Starlight's .sl-markdown-content CSS handles them.
@@ -46,7 +46,7 @@ import TableCell            from './TableCell.astro';
 
 export const notroComponents = {
   // ── Notion-specific blocks ─────────────────────────────────────────────
-  callout:               Callout,
+  Callout:               Callout,
   details:               Toggle,
   summary:               ToggleTitle,
   columns:               Columns,

@@ -4,9 +4,8 @@ import partytown from "@astrojs/partytown";
 import tailwindcss from "@tailwindcss/vite";
 import { notionImageService } from "notro-loader/image-service";
 import { notro } from "notro-loader/integration";
-import { rehypeMermaid } from "rehype-beautiful-mermaid";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
+import { satteriMermaid } from "satteri-beautiful-mermaid";
+import { satteriKatex } from "./src/lib/satteri-katex.ts";
 
 // To enable SSR, install the adapter for your platform and uncomment the relevant lines:
 // - Vercel:     npm i @astrojs/vercel     → import vercel from "@astrojs/vercel";
@@ -37,7 +36,10 @@ export default defineConfig({
     // Notion images are served from AWS S3 (various subdomains) and notion.so CDN.
     remotePatterns: [
       { protocol: "https", hostname: "*.amazonaws.com" },
-      { protocol: "https", hostname: "prod-files-secure.s3.us-west-2.amazonaws.com" },
+      {
+        protocol: "https",
+        hostname: "prod-files-secure.s3.us-west-2.amazonaws.com",
+      },
       { protocol: "https", hostname: "www.notion.so" },
       { protocol: "https", hostname: "notion.so" },
     ],
@@ -45,13 +47,12 @@ export default defineConfig({
 
   integrations: [
     notro({
-      // Shiki is injected last automatically, after rehypeMermaid and rehypeKatex.
+      // Shiki is injected last automatically, after satteriMermaid.
       shikiConfig: { theme: "github-dark" },
-      remarkPlugins: [remarkMath],
-      rehypePlugins: [
-        [rehypeMermaid, { theme: "github-dark" }],
-        rehypeKatex,
-      ],
+      // Satteri parses $...$ / $$...$$ into math nodes; satteriKatex renders them.
+      features: { math: true },
+      mdastPlugins: [satteriKatex()],
+      hastPlugins: [satteriMermaid({ theme: "github-dark" })],
     }),
     sitemap(),
     // Offloads third-party scripts (Google Analytics) to a web worker via Partytown.
