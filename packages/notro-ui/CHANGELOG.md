@@ -1,5 +1,11 @@
 # notro-ui
 
+## 0.3.0
+
+### Minor Changes
+
+- [#173](https://github.com/mosugi/notro/pull/173) [`28020aa`](https://github.com/mosugi/notro/commit/28020aa37bbb5f48be8e3e812ae1442907aad022) Thanks [@mosugi](https://github.com/mosugi)! - Rename the callout component-map key from `callout` to `Callout` in the components template (index.ts), matching the PascalCase keys of all other Notion block components. Re-run `notro-ui update` (or rename the key manually) in projects that have installed the components.
+
 ## 0.2.0
 
 ### Minor Changes

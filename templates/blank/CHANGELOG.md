@@ -1,5 +1,12 @@
 # notro-blank
 
+## 0.0.15
+
+### Patch Changes
+
+- Updated dependencies [[`28020aa`](https://github.com/mosugi/notro/commit/28020aa37bbb5f48be8e3e812ae1442907aad022)]:
+  - notro-loader@0.4.0
+
 ## 0.0.14
 
 ### Patch Changes
