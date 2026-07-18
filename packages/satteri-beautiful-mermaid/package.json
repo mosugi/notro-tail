@@ -1,7 +1,7 @@
 {
   "name": "satteri-beautiful-mermaid",
   "description": "Satteri hast plugin that renders Mermaid code blocks to inline SVG at build time",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "author": "mosugi <mosugeek@gmail.com>",
   "license": "MIT",
