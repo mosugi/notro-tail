@@ -164,7 +164,7 @@ NotroTail は Astro の静的出力モードを使用しています。SSR ア�
 | [`remark-nfm`](./packages/remark-nfm/) | `packages/remark-nfm/` | Notion Flavored Markdown 向けの remark プラグイン。前処理（10 件の修正）・`:::callout` ディレクティブ構文・コールアウト変換をまとめたもの。Astro / Notion API 非依存で npm に単独公開可能。 |
 | [`notro-loader`](./packages/notro-loader/) | `packages/notro-loader/` | Astro + Notion API 統合ライブラリ。Content Loader・MDX コンパイルパイプライン（内部で `remark-nfm` を使用）・ヘッドレス Astro コンポーネントを提供。 |
 | [`notro-ui`](./packages/notro-ui/) | `packages/notro-ui/` | `notro-loader` 向けのコピー所有型スタイル済みコンポーネント（shadcn と同じ思想）。`notro-ui add --all` でプロジェクトにコンポーネントをインストール — インストール後はあなたのコードになり、直接編集できます。 |
-| [`rehype-beautiful-mermaid`](./packages/rehype-beautiful-mermaid/) | `packages/rehype-beautiful-mermaid/` | Mermaid コードブロックをビルド時にインライン SVG にレンダリングする rehype プラグイン。 |
+| [`satteri-beautiful-mermaid`](./packages/satteri-beautiful-mermaid/) | `packages/satteri-beautiful-mermaid/` | Mermaid コードブロックをビルド時にインライン SVG にレンダリングする Sätteri hast プラグイン。 |
 | [`create-notro`](./packages/create-notro/) | `packages/create-notro/` | CLI スキャフォールディングツール。`npm create notro@latest` でテンプレートを選択してサイトを作成。 |
 | `notro-blog` (blog) | `templates/blog/` | フル機能ブログテンプレート。リファレンス実装として使用され、`create-notro`（`npm create notro@latest`）でも取得できます。 |
 | `notro-blank` (blank) | `templates/blank/` | 最小構成スターター。ページ一覧と Notion コンテンツのレンダリングのみ。 |
