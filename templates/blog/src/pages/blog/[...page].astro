@@ -6,7 +6,7 @@ import BlogList from "../../components/blog/BlogList.astro";
 import Layout from "../../layouts/Layout.astro";
 import Pagination from "../../components/blog/Pagination.astro";
 import config from "../../config";
-import { getSortedBlogPosts, getPinnedPosts, getBeginnerPosts, buildSlugMap } from "../../lib/blog.ts";
+import { getSortedBlogPosts, getPinnedPosts, getBeginnerPosts, filterPostsByLang, buildSlugMap } from "../../lib/blog.ts";
 
 export async function getStaticPaths({
   paginate,
@@ -14,7 +14,7 @@ export async function getStaticPaths({
   paginate: PaginateFunction;
 }) {
   const allPosts = await getCollection("posts");
-  const blogPosts = getSortedBlogPosts(allPosts);
+  const blogPosts = filterPostsByLang(getSortedBlogPosts(allPosts), "en");
   const pinnedPosts = getPinnedPosts(blogPosts);
   const beginnerPosts = getBeginnerPosts(blogPosts);
 

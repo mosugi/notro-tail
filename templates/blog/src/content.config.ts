@@ -34,6 +34,7 @@ const postsCollection = defineCollection({
       }),
       Tags: notroProperties.multiSelect,
       Date: notroProperties.date,
+      Lang: notroProperties.select.optional(),
     }),
   }),
 });

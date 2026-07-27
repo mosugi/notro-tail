@@ -10,6 +10,7 @@ const notroDocsSchema = pageWithMarkdownSchema
       Description: notroProperties.richText.optional(),
       Slug: notroProperties.richText,
       Public: notroProperties.checkbox,
+      Lang: notroProperties.select.optional(),
     }),
   })
   // Make all Notion fields optional and allow extra fields to pass through so that
@@ -56,15 +57,18 @@ export const collections = {
       },
       clientOptions: { auth: import.meta.env.NOTION_TOKEN },
       useFilePath: true,
-      // Use the Slug property as the entry ID so Starlight's sidebar slugs match.
-      // e.g. Slug = "getting-started/introduction" → entry ID = "getting-started/introduction"
+      // Build entry ID from Lang + Slug so Starlight's locale routing works.
+      // root locale (en): "getting-started/introduction"
+      // other locales:    "ja/getting-started/introduction"
       generateId: (page) => {
+        const lang = page.properties.Lang?.select?.name; // "en" | "ja" | "zh-cn" | undefined
         const slugProp = page.properties.Slug;
-        if (slugProp?.type === "rich_text" && slugProp.rich_text.length > 0) {
-          const text = slugProp.rich_text.map((t) => t.plain_text).join("");
-          if (text) return text;
-        }
-        return page.id;
+        const slug =
+          slugProp?.type === "rich_text" && slugProp.rich_text.length > 0
+            ? slugProp.rich_text.map((t) => t.plain_text).join("")
+            : "";
+        if (!slug) return page.id;
+        return lang && lang !== "en" ? `${lang}/${slug}` : slug;
       },
     }),
     schema: notroDocsSchema,

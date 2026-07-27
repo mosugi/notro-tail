@@ -3,11 +3,11 @@ import { getCollection } from "astro:content";
 import Layout from "../layouts/Layout.astro";
 import config from "../config";
 import BlogList from "../components/blog/BlogList.astro";
-import { getSortedBlogPosts, getPinnedPosts, buildSlugMap } from "../lib/blog";
+import { getSortedBlogPosts, getPinnedPosts, filterPostsByLang, buildSlugMap } from "../lib/blog";
 
 const allPosts = await getCollection("posts");
 const slugMap = buildSlugMap(allPosts);
-const blogPosts = getSortedBlogPosts(allPosts);
+const blogPosts = filterPostsByLang(getSortedBlogPosts(allPosts), "en");
 const pinnedPosts = getPinnedPosts(blogPosts);
 const recentPosts = blogPosts
   .filter((p) => !pinnedPosts.includes(p))
